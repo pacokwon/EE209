@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 int main(void) {
     int c;
@@ -44,9 +45,11 @@ int main(void) {
         box.state == CommentFinalAsterisk) {
         fprintf(stderr, "Error: line %d: unterminated comment\n",
                 box.commentStartLine);
+
+        return EXIT_FAILURE;
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 void opStart(char inputChar, struct StateBox *box) {
