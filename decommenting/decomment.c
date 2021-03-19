@@ -8,10 +8,7 @@ int main(void) {
     int c;
 
     struct StateBox box;
-    box.currentSurrounder = '\0';
-    box.commentStartLine = 1;
-    box.currentLine = 1;
-    box.state = Start;
+    stateBoxInit(&box);
 
     while ((c = getchar()) != EOF) {
         if (c == '\n')
@@ -50,6 +47,13 @@ int main(void) {
     }
 
     return EXIT_SUCCESS;
+}
+
+void stateBoxInit(struct StateBox* box) {
+    box->currentSurrounder = '\0';
+    box->commentStartLine = 1;
+    box->currentLine = 1;
+    box->state = Start;
 }
 
 void opStart(char inputChar, struct StateBox *box) {

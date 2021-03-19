@@ -18,6 +18,8 @@ struct StateBox {
     enum DFAState state;
 };
 
+void stateBoxInit(struct StateBox* box);
+
 void opStart(char inputChar, struct StateBox *box);
 void opStringLiteralContent(char inputChar, struct StateBox *box);
 void opStringLiteralBackslash(char inputChar, struct StateBox *box);
