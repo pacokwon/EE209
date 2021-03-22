@@ -21,4 +21,8 @@ results/%.result: results/%.output results/%.error sample/%.output sample/%.erro
 	@diff $(basename $@).error sample/$(basename $(notdir $@)).error | tee -a $@
 	@echo "---------------------------------" | tee -a $@
 
-.PRECIOUS: results/%.output results/%.error
+clean:
+	rm -rf sample results
+
+.PRECIOUS: results/%.output results/%.error sample/%.output sample/%.error
+.PHONY: clean
