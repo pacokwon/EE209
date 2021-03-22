@@ -1,6 +1,13 @@
+/**
+ * Author: Haechan Kwon (권해찬)
+ * Assignment: Decommenting (Assignment 1)
+ * Filename: decomment.h
+ */
+
 #ifndef DECOMMENT_H
 #define DECOMMENT_H
 
+// enum containing all DFA states
 enum DFAState {
     Start,
     StringLiteralContent,
@@ -10,11 +17,20 @@ enum DFAState {
     CommentFinalAsterisk,
 };
 
-
+// struct containing the states necessary to keep track of
 struct StateBox {
+    // current surrounding character.
+    // if the current state is inside a string literal,
+    // the surrounder might be something like "
     char currentSurrounder;
+
+    // the line no. that the current comment (if any) has started from
     int commentStartLine;
+
+    // current line number
     int currentLine;
+
+    // current DFA state
     enum DFAState state;
 };
 

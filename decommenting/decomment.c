@@ -50,6 +50,8 @@ int main(void) {
         }
     }
 
+    // if EOF is encountered and state is still inside comment,
+    // print error message to stderr
     if (box.state == CommentInitialAsterisk ||
         box.state == CommentFinalAsterisk) {
         fprintf(stderr, "Error: line %d: unterminated comment\n",
