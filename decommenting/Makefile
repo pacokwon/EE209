@@ -7,11 +7,11 @@ decomment: decomment.c
 
 results/%.output results/%.error: tests/%.c decomment
 	@mkdir -p results
-	./decomment < $< > $(basename $@).output 2> $(basename $@).error
+	-./decomment < $< > $(basename $@).output 2> $(basename $@).error
 
 sample/%.output sample/%.error: tests/%.c sampledecomment
 	@mkdir -p sample
-	@./sampledecomment < $< > $(basename $@).output 2> $(basename $@).error
+	-./sampledecomment < $< > $(basename $@).output 2> $(basename $@).error
 
 results/%.result: results/%.output results/%.error sample/%.output sample/%.error
 	@echo "------- Output Comparison -------" | tee $@
