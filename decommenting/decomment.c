@@ -4,11 +4,49 @@
  * Filename: decomment.c
  */
 
-#include "decomment.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+// enum containing all DFA states
+enum DFAState {
+    Start,
+    StringLiteralContent,
+    StringLiteralBackslash,
+    CommentInitialBackslash,
+    CommentInitialAsterisk,
+    CommentFinalAsterisk,
+};
+
+// struct containing the states necessary to keep track of
+struct StateBox {
+    // current surrounding character.
+    // if the current state is inside a string literal,
+    // the surrounder might be something like "
+    char currentSurrounder;
+
+    // the line no. that the current comment (if any) has started from
+    int commentStartLine;
+
+    // current line number
+    int currentLine;
+
+    // current DFA state
+    enum DFAState state;
+};
+
+void stateBoxInit(struct StateBox* box);
+
+void opStart(char inputChar, struct StateBox *box);
+void opStringLiteralContent(char inputChar, struct StateBox *box);
+void opStringLiteralBackslash(char inputChar, struct StateBox *box);
+void opStringLiteralEnd(char inputChar, struct StateBox *box);
+void opCommentInitialBackslash(char inputChar, struct StateBox *box);
+void opCommentInitialAsterisk(char inputChar, struct StateBox *box);
+void opCommentContent(char inputChar, struct StateBox *box);
+void opCommentFinalAsterisk(char inputChar, struct StateBox *box);
+void opCommentEnd(char inputChar, struct StateBox *box);
 
 /**
  * main function
@@ -21,11 +59,13 @@ int main(void) {
     struct StateBox box;
     stateBoxInit(&box);
 
+    // keep reading characters until EOF
     while ((c = getchar()) != EOF) {
         // keep track of current line
         if (c == '\n')
             box.currentLine++;
 
+        // run the respective handler according to the state
         switch (box.state) {
         case Start:
             opStart(c, &box);
@@ -69,10 +109,15 @@ int main(void) {
  *
  * initialize a statebox value's fields
  */
-void stateBoxInit(struct StateBox* box) {
+void stateBoxInit(struct StateBox *box) {
+    // no surrounder. initialize with null
     box->currentSurrounder = '\0';
+
+    // at initial state, line number is 1
     box->commentStartLine = 1;
     box->currentLine = 1;
+
+    // state starts at Start
     box->state = Start;
 }
 
