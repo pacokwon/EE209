@@ -228,6 +228,7 @@ void opCommentFinalAsterisk(char inputChar, struct StateBox *box) {
     } else if (inputChar == '\n') {
         // comments are not printed. except newlines
         printf("%c", inputChar);
+        box->state = CommentInitialAsterisk;
     } else {
         // still inside comment. go back to previous state.
         box->state = CommentInitialAsterisk;
