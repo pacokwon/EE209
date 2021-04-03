@@ -7,18 +7,18 @@ decomment: decomment.c
 
 results/%.output results/%.error: tests/%.c decomment
 	@mkdir -p results
-	-./decomment < $< > $(basename $@).output 2> $(basename $@).error
+	-./decomment < $< > results/$*.output 2> results/$*.error
 
 sample/%.output sample/%.error: tests/%.c sampledecomment
 	@mkdir -p sample
-	-./sampledecomment < $< > $(basename $@).output 2> $(basename $@).error
+	-./sampledecomment < $< > sample/$*.output 2> sample/$*.error
 
 results/%.result: results/%.output results/%.error sample/%.output sample/%.error
 	@echo "------- Output Comparison -------" | tee $@
-	@diff $(basename $@).output sample/$(basename $(notdir $@)).output | tee -a $@
+	@diff results/$*.output sample/$*.output | tee -a $@
 	@echo "---------------------------------" | tee -a $@
 	@echo "------- Error  Comparison -------" | tee -a $@
-	@diff $(basename $@).error sample/$(basename $(notdir $@)).error | tee -a $@
+	@diff results/$*.error sample/$*.error | tee -a $@
 	@echo "---------------------------------" | tee -a $@
 
 clean:
