@@ -70,7 +70,7 @@ char *StrFindChr(const char *pcHaystack, int c) {
         cursor++;
     }
 
-    return *cursor == '\0' ? cursor : NULL;
+    return *cursor == c ? cursor : NULL;
 }
 /*------------------------------------------------------------------------*/
 char *StrFindStr(const char *pcHaystack, const char *pcNeedle) {
