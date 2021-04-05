@@ -30,8 +30,13 @@ char *StrCopy(char *pcDest, const char *pcSrc) {
     srcCursor = pcSrc;
     destCursor = pcDest;
 
-    while (*srcCursor)
+    while (*srcCursor) {
         *destCursor = *srcCursor;
+
+        srcCursor++;
+        destCursor++;
+    }
+
     *destCursor = '\0';
 
     return pcDest;
@@ -121,6 +126,8 @@ char *StrConcat(char *pcDest, const char *pcSrc) {
     srcCursor = pcSrc;
     while (*srcCursor) {
         *cursor = *srcCursor;
+
+        cursor++;
         srcCursor++;
     }
     *cursor = '\0';
