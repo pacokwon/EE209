@@ -1,4 +1,5 @@
 #include <assert.h> /* to use assert() */
+#include <ctype.h>
 #include <stdio.h>
 #include "str.h"
 
@@ -137,8 +138,9 @@ char *StrConcat(char *pcDest, const char *pcSrc) {
 
 /*------------------------------------------------------------------------*/
 long int StrToLong(const char *nptr, char **endptr, int base) {
-    long sum;
     const char *cursor;
+    unsigned long sum, threshold, digitLimit;
+    int isNegative = 0, isOutOfRange = 0, digit;
 
     /* handle only when base is 10 */
     if (base != 10) return 0;
@@ -146,14 +148,48 @@ long int StrToLong(const char *nptr, char **endptr, int base) {
     sum = 0L;
     cursor = nptr;
 
+    while (isspace(*cursor))
+        cursor++;
+
+    if (*cursor == '+') {
+        isNegative = 0;
+        cursor++;
+    } else if (*cursor == '-') {
+        isNegative = 1;
+        cursor++;
+    }
+
+    if (isNegative) {
+        threshold = (-(unsigned long) LONG_MIN) / 10L;
+        digitLimit = (-(unsigned long) LONG_MIN) % 10L;
+    } else {
+        threshold = LONG_MAX / 10L;
+        digitLimit = LONG_MAX % 10L;
+    }
+
     while (*cursor) {
         if (!('0' <= *cursor && *cursor <= '9'))
             break;
 
-        sum = base * sum + (*cursor - '0');
+        digit = *cursor - '0';
+
+        if (isOutOfRange || sum > threshold || sum == threshold && digit > digitLimit) {
+            isOutOfRange = 1;
+            cursor++;
+            continue;
+        }
+
+        sum = base * sum + digit;
         cursor++;
     }
 
-    *endptr = (char *) cursor;
+    // only save when enptr is provided
+    if (endptr)
+        *endptr = (char *) cursor;
+    if (isOutOfRange)
+        sum = isNegative ? LONG_MIN : LONG_MAX;
+    if (isNegative)
+        sum = -sum;
+
     return sum;
 }
