@@ -9,7 +9,7 @@ void test1(void) {
     strcpy(original2, "123456789");
 
     strcat(original1, "123456789");
-    strcat(original2, "123456789");
+    StrConcat(original2, "123456789");
 
     assert(strcmp(original1, original2) == 0);
 }
@@ -20,7 +20,7 @@ void test2(void) {
     strcpy(original2, "1234\06789");
 
     strcat(original1, "56789");
-    strcat(original2, "56789");
+    StrConcat(original2, "56789");
 
     assert(strcmp(original1, original2) == 0);
 }

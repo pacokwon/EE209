@@ -8,7 +8,7 @@ void test1(void) {
 
     char buffer1[12], buffer2[12];
     strcpy (buffer1, original);
-    strcpy (buffer2, original);
+    StrCopy (buffer2, original);
     assert(strcmp (buffer1, buffer2) == 0);
 }
 
@@ -17,7 +17,7 @@ void test2(void) {
 
     char buffer1[12], buffer2[12];
     strcpy (buffer1, original);
-    strcpy (buffer2, original);
+    StrCopy (buffer2, original);
     assert(strcmp (buffer1, buffer2) == 0);
 }
 
