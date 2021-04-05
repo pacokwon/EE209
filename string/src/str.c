@@ -82,6 +82,7 @@ char *StrFindStr(const char *pcHaystack, const char *pcNeedle) {
         // equal by default
         isEqual = 1;
 
+        // start string comparison from here
         haystackCursor = cursor;
         needleCursor = pcNeedle;
         while (*needleCursor) {
@@ -94,9 +95,11 @@ char *StrFindStr(const char *pcHaystack, const char *pcNeedle) {
             haystackCursor++;
         }
 
+        // early return if equal
         if (isEqual)
             return (char *) cursor;
 
+        // if not equal, move to next character
         cursor++;
     }
 
