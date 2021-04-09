@@ -3,6 +3,8 @@ CFLAGS = -Iinclude
 TESTS = strlen strcpy strcmp strchr strstr strcat strtol
 CLIENT_TESTS = StrGetLength StrCopy StrCompare StrFindStr StrConcat StrFindChr StrToLong
 
+sgrep: build/sgrep
+
 # run custom test
 custom:
 	@for test in $(TESTS); do \
@@ -33,6 +35,9 @@ build/tests/client: src/client.c
 	@mkdir -p build/tests
 	$(CC) $(CFLAGS) src/str.c src/client.c -o build/tests/client
 
+build/sgrep: src/sgrep.c
+	$(CC) $(CFLAGS) src/str.c src/sgrep.c -o build/sgrep
+
 %.test: build/tests/%.bin
 	@if [ -e ./build/tests/$*.bin ]; then \
 		./build/tests/$*.bin; \
@@ -40,5 +45,5 @@ build/tests/client: src/client.c
 		@echo "file does not exist!"; \
 	fi
 
-.PHONY: custom test %.test clean
+.PHONY: custom test %.test clean sgrep
 .PRECIOUS: build/str.o build/tests/%.o build/tests/%.bin

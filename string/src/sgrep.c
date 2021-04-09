@@ -18,14 +18,59 @@
    print out the usage of the Simple Grep Program                     */
 /*--------------------------------------------------------------------*/
 void
-PrintUsage(const char* argv0)
-{
+PrintUsage(const char* argv0) {
     const static char *fmt =
         "Simple Grep (sgrep) Usage:\n"
         "%s pattern [stdin]\n";
 
     printf(fmt, argv0);
 }
+
+int
+LineHasPattern(char *buffer, const char *pattern, int isStart) {
+    char *bufferCursor;
+    char patternChar;
+    int hasPattern;
+
+    bufferCursor = buffer;
+    patternChar = *pattern;
+
+    // end of pattern. return true
+    if (patternChar == '\0')
+        return TRUE;
+
+    // not end of pattern, but end of line.
+    if (*bufferCursor == '\0')
+        return FALSE;
+
+    if (patternChar == '*') {
+        while (*bufferCursor) {
+            hasPattern = LineHasPattern(bufferCursor, pattern + 1, FALSE);
+
+            // early return
+            if (hasPattern)
+                return TRUE;
+
+            bufferCursor++;
+        }
+    } else if (isStart) {
+        bufferCursor = strchr(bufferCursor, patternChar);
+        while (bufferCursor != NULL) {
+            hasPattern = LineHasPattern(bufferCursor + 1, pattern + 1, FALSE);
+            // early return
+            if (hasPattern)
+                return TRUE;
+
+            bufferCursor = strchr(bufferCursor + 1, patternChar);
+        }
+    } else {
+        if (*bufferCursor == patternChar)
+            return LineHasPattern(bufferCursor + 1, pattern + 1, FALSE);
+    }
+
+    return FALSE;
+}
+
 /*-------------------------------------------------------------------*/
 /* SearchPattern()
    Your task:
@@ -50,9 +95,9 @@ message to standard error
 NOTE: If there is any problem, return FALSE; if not, return TRUE  */
 /*-------------------------------------------------------------------*/
 int
-SearchPattern(const char *pattern)
-{
+SearchPattern(const char *pattern) {
     // room for newline and null
+    // buffer ends with a newline, pattern ends with a null char
     char buf[MAX_STR_LEN + 2];
     int len;
 
@@ -62,22 +107,23 @@ SearchPattern(const char *pattern)
     }
 
     /* Read one line at a time from stdin, and process each line */
-    while (fgets(buf, sizeof(buf), stdin)) {
+    while (fgets (buf, sizeof(buf), stdin)) {
         /* check the length of an input line */
         if ((len = StrGetLength(buf)) > MAX_STR_LEN) {
             fprintf(stderr, "Error: input line is too long\n");
             return FALSE;
         }
 
-
+        if (LineHasPattern(buf, pattern, TRUE))
+            printf("%s", buf);
     }
 
     return TRUE;
 }
+
 /*-------------------------------------------------------------------*/
 int
-main(const int argc, const char *argv[])
-{
+main(const int argc, const char *argv[]) {
     /* Do argument check and parsing */
     if (argc < 2) {
         fprintf(stderr, "Error: argument parsing error\n");
@@ -85,5 +131,5 @@ main(const int argc, const char *argv[])
         return (EXIT_FAILURE);
     }
 
-    return SearchPattern(argv[1]) ? EXIT_SUCCESS:EXIT_FAILURE;
+    return SearchPattern(argv[1]) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
