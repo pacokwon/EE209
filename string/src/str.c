@@ -13,8 +13,9 @@
 /* Part 1 */
 /*------------------------------------------------------------------------*/
 size_t StrGetLength(const char *pcSrc) {
-    const char *pcEnd;
     assert(pcSrc); /* NULL address, 0, and FALSE are identical. */
+
+    const char *pcEnd;
     pcEnd = pcSrc;
 
     while (*pcEnd) /* null character and FALSE are identical. */
@@ -25,6 +26,9 @@ size_t StrGetLength(const char *pcSrc) {
 
 /*------------------------------------------------------------------------*/
 char *StrCopy(char *pcDest, const char *pcSrc) {
+    assert(pcDest);
+    assert(pcSrc);
+
     const char *srcCursor;
     char *destCursor;
 
@@ -45,6 +49,9 @@ char *StrCopy(char *pcDest, const char *pcSrc) {
 
 /*------------------------------------------------------------------------*/
 int StrCompare(const char *s1, const char *s2) {
+    assert(s1);
+    assert(s2);
+
     const char *s1Cursor, *s2Cursor;
 
     s1Cursor = s1;
@@ -69,6 +76,8 @@ int StrCompare(const char *s1, const char *s2) {
 }
 /*------------------------------------------------------------------------*/
 char *StrFindChr(const char *pcHaystack, int c) {
+    assert(pcHaystack);
+
     char *cursor = (char *) pcHaystack;
     while (*cursor) {
         if (*cursor == c)
@@ -80,6 +89,9 @@ char *StrFindChr(const char *pcHaystack, int c) {
 }
 /*------------------------------------------------------------------------*/
 char *StrFindStr(const char *pcHaystack, const char *pcNeedle) {
+    assert(pcHaystack);
+    assert(pcNeedle);
+
     const char *cursor, *haystackCursor, *needleCursor;
     int isEqual;
 
@@ -114,6 +126,9 @@ char *StrFindStr(const char *pcHaystack, const char *pcNeedle) {
 
 /*------------------------------------------------------------------------*/
 char *StrConcat(char *pcDest, const char *pcSrc) {
+    assert(pcDest);
+    assert(pcSrc);
+
     char *cursor;
     const char *srcCursor;
 
@@ -138,6 +153,8 @@ char *StrConcat(char *pcDest, const char *pcSrc) {
 
 /*------------------------------------------------------------------------*/
 long int StrToLong(const char *nptr, char **endptr, int base) {
+    assert(nptr);
+
     const char *cursor;
     unsigned long sum, threshold, digitLimit;
     int isNegative = 0, isOutOfRange = 0, digit;
