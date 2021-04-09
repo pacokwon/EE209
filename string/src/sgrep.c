@@ -54,14 +54,14 @@ LineHasPattern(char *buffer, const char *pattern, int isStart) {
             bufferCursor++;
         }
     } else if (isStart) {
-        bufferCursor = strchr(bufferCursor, patternChar);
+        bufferCursor = StrFindChr(bufferCursor, patternChar);
         while (bufferCursor != NULL) {
             hasPattern = LineHasPattern(bufferCursor + 1, pattern + 1, FALSE);
             // early return
             if (hasPattern)
                 return TRUE;
 
-            bufferCursor = strchr(bufferCursor + 1, patternChar);
+            bufferCursor = StrFindChr(bufferCursor + 1, patternChar);
         }
     } else {
         if (*bufferCursor == patternChar)
