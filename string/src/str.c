@@ -3,15 +3,12 @@
 #include <stdio.h>
 #include "str.h"
 
-/* Your task is:
-   1. Rewrite the body of "Part 1" functions - remove the current
-   body that simply calls the corresponding C standard library
-   function.
-   2. Write appropriate comment per each function
-   */
-
-/* Part 1 */
-/*------------------------------------------------------------------------*/
+/**
+ * StrGetLength - accept a char pointer and return the length of the string
+ *
+ * pcSrc: char pointer pointing to the string
+ * returns: the length of the null terminated string
+ */
 size_t StrGetLength(const char *pcSrc) {
     assert(pcSrc); /* NULL address, 0, and FALSE are identical. */
 
@@ -24,7 +21,13 @@ size_t StrGetLength(const char *pcSrc) {
     return (size_t)(pcEnd - pcSrc);
 }
 
-/*------------------------------------------------------------------------*/
+/**
+ * StrCopy - copy a string to another memory location
+ *
+ * pcDest: char pointer pointing to the destination string
+ * pcSrc: char pointer pointing to original source string
+ * returns: a pointer to the destination string (pcDest)
+ */
 char *StrCopy(char *pcDest, const char *pcSrc) {
     assert(pcDest);
     assert(pcSrc);
@@ -48,6 +51,16 @@ char *StrCopy(char *pcDest, const char *pcSrc) {
 }
 
 /*------------------------------------------------------------------------*/
+/**
+ * StrCompare - lexicographically compare two strings s1 and s2
+ *
+ * s1: first string to compare
+ * s2: second string to compare
+ * returns:
+ *  1 if s1 is greater than s2
+ *  0 if s1 is equal to s2
+ *  -1 if s1 is lesser than s2
+ */
 int StrCompare(const char *s1, const char *s2) {
     assert(s1);
     assert(s2);
@@ -74,7 +87,17 @@ int StrCompare(const char *s1, const char *s2) {
     else
         return -1;
 }
+
 /*------------------------------------------------------------------------*/
+/**
+ * StrFindChr - return the address to the first occurrence of c in pcHaystack
+ *
+ * pcHaystack: string to find c from
+ * c: character to find from pcHaystack
+ * returns:
+ *  address to the first occurrence of c in pcHaystack
+ *  NULL if c is not present
+ */
 char *StrFindChr(const char *pcHaystack, int c) {
     assert(pcHaystack);
 
@@ -88,6 +111,16 @@ char *StrFindChr(const char *pcHaystack, int c) {
     return *cursor == c ? cursor : NULL;
 }
 /*------------------------------------------------------------------------*/
+/**
+ * StrFindStr - return the address to the
+ *  first occurrence of pcNeedle in pcHaystack
+ *
+ * pcHaystack: string to find pcNeedle from
+ * pcNeedle: string to find from pcHaystack
+ * returns:
+ *  address to the first occurrence of pcNeedle in pcHaystack
+ *  NULL if pcNeedle is not present
+ */
 char *StrFindStr(const char *pcHaystack, const char *pcNeedle) {
     assert(pcHaystack);
     assert(pcNeedle);
@@ -125,6 +158,15 @@ char *StrFindStr(const char *pcHaystack, const char *pcNeedle) {
 }
 
 /*------------------------------------------------------------------------*/
+/**
+ * StrConcat - append a copy of pcSrc to the end of pcDest
+ *
+ * pcDest: destination of the string to be appended to
+ * pcSrc: string whose copy is to be appended to the end of pcDest
+ * returns:
+ *  address of the destination string
+ *
+ */
 char *StrConcat(char *pcDest, const char *pcSrc) {
     assert(pcDest);
     assert(pcSrc);
@@ -152,6 +194,21 @@ char *StrConcat(char *pcDest, const char *pcSrc) {
 }
 
 /*------------------------------------------------------------------------*/
+/**
+ * StrToLong - convert a string to a long value
+ *
+ * nptr: string whose value is desired to be converted to
+ * endptr: address of the first invalid character, if an error occurs
+ * base: given base to interpret the integer value
+ * returns:
+ *  converted integer value
+ *
+ * nptr accepts a variety of forms.
+ * the string can contain a sign before the integer, such as + and -.
+ * the function will also ignore any whitespace before the sign or integer
+ * if the integer value exceeds data type bounds, it will clamped to the
+ * boundary of long.
+ */
 long int StrToLong(const char *nptr, char **endptr, int base) {
     assert(nptr);
 
@@ -190,7 +247,12 @@ long int StrToLong(const char *nptr, char **endptr, int base) {
 
         digit = *cursor - '0';
 
-        if (isOutOfRange || sum > threshold || sum == threshold && digit > digitLimit) {
+        if (
+            isOutOfRange ||
+            sum > threshold ||
+            sum == threshold &&
+            digit > digitLimit
+        ) {
             isOutOfRange = 1;
             cursor++;
             continue;
@@ -200,7 +262,7 @@ long int StrToLong(const char *nptr, char **endptr, int base) {
         cursor++;
     }
 
-    // only save when enptr is provided
+    // only save when endptr is provided
     if (endptr)
         *endptr = (char *) cursor;
     if (isOutOfRange)
