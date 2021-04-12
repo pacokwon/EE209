@@ -1,13 +1,13 @@
+#include "str.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> /* for skeleton code */
 #include <unistd.h> /* for getopt */
-#include "str.h"
 
 #define MAX_STR_LEN 1023
 
 #define FALSE 0
-#define TRUE  1
+#define TRUE 1
 
 /*
  * Fill out your own functions here (If you need)
@@ -17,17 +17,14 @@
 /* PrintUsage()
    print out the usage of the Simple Grep Program                     */
 /*--------------------------------------------------------------------*/
-void
-PrintUsage(const char* argv0) {
-    const static char *fmt =
-        "Simple Grep (sgrep) Usage:\n"
-        "%s pattern [stdin]\n";
+void PrintUsage(const char *argv0) {
+    const static char *fmt = "Simple Grep (sgrep) Usage:\n"
+                             "%s pattern [stdin]\n";
 
     printf(fmt, argv0);
 }
 
-int
-LineHasPattern(char *buffer, const char *pattern, int isStart) {
+int LineHasPattern(char *buffer, const char *pattern, int isStart) {
     char *bufferCursor;
     char patternChar;
     int hasPattern;
@@ -45,7 +42,8 @@ LineHasPattern(char *buffer, const char *pattern, int isStart) {
 
     if (patternChar == '*') {
         while (*bufferCursor) {
-            hasPattern = LineHasPattern(bufferCursor, pattern + 1, FALSE);
+            hasPattern =
+                LineHasPattern(bufferCursor, pattern + 1, FALSE);
 
             // early return
             if (hasPattern)
@@ -56,7 +54,8 @@ LineHasPattern(char *buffer, const char *pattern, int isStart) {
     } else if (isStart) {
         bufferCursor = StrFindChr(bufferCursor, patternChar);
         while (bufferCursor != NULL) {
-            hasPattern = LineHasPattern(bufferCursor + 1, pattern + 1, FALSE);
+            hasPattern =
+                LineHasPattern(bufferCursor + 1, pattern + 1, FALSE);
             // early return
             if (hasPattern)
                 return TRUE;
@@ -94,8 +93,7 @@ message to standard error
 
 NOTE: If there is any problem, return FALSE; if not, return TRUE  */
 /*-------------------------------------------------------------------*/
-int
-SearchPattern(const char *pattern) {
+int SearchPattern(const char *pattern) {
     // room for newline and null
     // buffer ends with a newline, pattern ends with a null char
     char buf[MAX_STR_LEN + 2];
@@ -107,7 +105,7 @@ SearchPattern(const char *pattern) {
     }
 
     /* Read one line at a time from stdin, and process each line */
-    while (fgets (buf, sizeof(buf), stdin)) {
+    while (fgets(buf, sizeof(buf), stdin)) {
         /* check the length of an input line */
         if ((len = StrGetLength(buf)) > MAX_STR_LEN) {
             fprintf(stderr, "Error: input line is too long\n");
@@ -122,8 +120,7 @@ SearchPattern(const char *pattern) {
 }
 
 /*-------------------------------------------------------------------*/
-int
-main(const int argc, const char *argv[]) {
+int main(const int argc, const char *argv[]) {
     /* Do argument check and parsing */
     if (argc < 2) {
         fprintf(stderr, "Error: argument parsing error\n");

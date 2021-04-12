@@ -1,10 +1,11 @@
+#include "str.h"
 #include <assert.h> /* to use assert() */
 #include <ctype.h>
 #include <stdio.h>
-#include "str.h"
 
 /**
- * StrGetLength - accept a char pointer and return the length of the string
+ * StrGetLength - accept a char pointer and return the length of the
+ * string
  *
  * pcSrc: char pointer pointing to the string
  * returns: the length of the null terminated string
@@ -90,7 +91,8 @@ int StrCompare(const char *s1, const char *s2) {
 
 /*------------------------------------------------------------------------*/
 /**
- * StrFindChr - return the address to the first occurrence of c in pcHaystack
+ * StrFindChr - return the address to the first occurrence of c in
+ * pcHaystack
  *
  * pcHaystack: string to find c from
  * c: character to find from pcHaystack
@@ -101,7 +103,7 @@ int StrCompare(const char *s1, const char *s2) {
 char *StrFindChr(const char *pcHaystack, int c) {
     assert(pcHaystack);
 
-    char *cursor = (char *) pcHaystack;
+    char *cursor = (char *)pcHaystack;
     while (*cursor) {
         if (*cursor == c)
             return cursor;
@@ -148,7 +150,7 @@ char *StrFindStr(const char *pcHaystack, const char *pcNeedle) {
 
         // early return if equal
         if (isEqual)
-            return (char *) cursor;
+            return (char *)cursor;
 
         // if not equal, move to next character
         cursor++;
@@ -205,9 +207,9 @@ char *StrConcat(char *pcDest, const char *pcSrc) {
  *
  * nptr accepts a variety of forms.
  * the string can contain a sign before the integer, such as + and -.
- * the function will also ignore any whitespace before the sign or integer
- * if the integer value exceeds data type bounds, it will clamped to the
- * boundary of long.
+ * the function will also ignore any whitespace before the sign or
+ * integer if the integer value exceeds data type bounds, it will
+ * clamped to the boundary of long.
  */
 long int StrToLong(const char *nptr, char **endptr, int base) {
     assert(nptr);
@@ -217,7 +219,8 @@ long int StrToLong(const char *nptr, char **endptr, int base) {
     int isNegative = 0, isOutOfRange = 0, digit;
 
     /* handle only when base is 10 */
-    if (base != 10) return 0;
+    if (base != 10)
+        return 0;
 
     sum = 0L;
     cursor = nptr;
@@ -234,8 +237,8 @@ long int StrToLong(const char *nptr, char **endptr, int base) {
     }
 
     if (isNegative) {
-        threshold = (-(unsigned long) LONG_MIN) / 10L;
-        digitLimit = (-(unsigned long) LONG_MIN) % 10L;
+        threshold = (-(unsigned long)LONG_MIN) / 10L;
+        digitLimit = (-(unsigned long)LONG_MIN) % 10L;
     } else {
         threshold = LONG_MAX / 10L;
         digitLimit = LONG_MAX % 10L;
@@ -247,12 +250,8 @@ long int StrToLong(const char *nptr, char **endptr, int base) {
 
         digit = *cursor - '0';
 
-        if (
-            isOutOfRange ||
-            sum > threshold ||
-            sum == threshold &&
-            digit > digitLimit
-        ) {
+        if (isOutOfRange || sum > threshold ||
+            sum == threshold && digit > digitLimit) {
             isOutOfRange = 1;
             cursor++;
             continue;
@@ -264,7 +263,7 @@ long int StrToLong(const char *nptr, char **endptr, int base) {
 
     // only save when endptr is provided
     if (endptr)
-        *endptr = (char *) cursor;
+        *endptr = (char *)cursor;
     if (isOutOfRange)
         sum = isNegative ? LONG_MIN : LONG_MAX;
     if (isNegative)

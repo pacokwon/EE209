@@ -6,13 +6,13 @@ CLIENT_TESTS = StrGetLength StrCopy StrCompare StrFindStr StrConcat StrFindChr S
 sgrep: build/sgrep
 
 # run custom test
-custom:
+str-custom:
 	@for test in $(TESTS); do \
 		$(MAKE) $$test.test; \
 	done
 
 # run provided test
-test: build/tests/client
+str-provided: build/tests/client
 	@for test in $(CLIENT_TESTS); do \
 		./build/tests/client $$test; \
 	done
@@ -45,5 +45,5 @@ build/sgrep: src/sgrep.c
 		@echo "file does not exist!"; \
 	fi
 
-.PHONY: custom test %.test clean sgrep
+.PHONY: str-custom str-provided %.test clean sgrep
 .PRECIOUS: build/str.o build/tests/%.o build/tests/%.bin
