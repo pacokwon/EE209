@@ -30,6 +30,19 @@ void PrintUsage(const char *argv0) {
     printf(fmt, argv0);
 }
 
+/**
+ * LineHasPattern
+ *   return whether or not a line has the corresponding pattern
+ *
+ * param buffer: pointer to a NULL terminated string. contains the line
+ * param pattern: pointer to a NULL terminated string. contains the
+ *   pattern
+ * param isStart: a flag indicating whether the initial function call is
+ *   being made. 1 if initial call to function. 0 otherwise.
+ *
+ * this function recursively searches for the given pattern in the given
+ *   buffer.
+ */
 int LineHasPattern(char *buffer, const char *pattern, int isStart) {
     char *bufferCursor;
     char patternChar;
@@ -47,6 +60,8 @@ int LineHasPattern(char *buffer, const char *pattern, int isStart) {
         return FALSE;
 
     if (patternChar == '*') {
+        // wildcard character. iterate the buffer and start search from
+        // every character
         while (*bufferCursor) {
             hasPattern =
                 LineHasPattern(bufferCursor, pattern + 1, FALSE);
@@ -58,6 +73,8 @@ int LineHasPattern(char *buffer, const char *pattern, int isStart) {
             bufferCursor++;
         }
     } else if (isStart) {
+        // initial call to function. iterate buffer and search from
+        // every occurrence of the "first letter of the pattern"
         bufferCursor = StrFindChr(bufferCursor, patternChar);
         while (bufferCursor != NULL) {
             hasPattern =
@@ -69,6 +86,7 @@ int LineHasPattern(char *buffer, const char *pattern, int isStart) {
             bufferCursor = StrFindChr(bufferCursor + 1, patternChar);
         }
     } else {
+        // recursive call if pattern continues to match. return otherwise.
         if (*bufferCursor == patternChar)
             return LineHasPattern(bufferCursor + 1, pattern + 1, FALSE);
     }
@@ -118,6 +136,7 @@ int SearchPattern(const char *pattern) {
             return FALSE;
         }
 
+        // if line has pattern, print the line to the console.
         if (LineHasPattern(buf, pattern, TRUE))
             printf("%s", buf);
     }
