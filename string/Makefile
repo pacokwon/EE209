@@ -5,6 +5,9 @@ CLIENT_TESTS = StrGetLength StrCopy StrCompare StrFindStr StrConcat StrFindChr S
 
 sgrep: build/sgrep
 
+archive:
+	tar -cvzf submission.tar.gz readme -C src sgrep.c str.c -C ../include str.h
+
 # run custom test
 str-custom:
 	@for test in $(TESTS); do \
@@ -45,5 +48,5 @@ build/sgrep: src/sgrep.c
 		@echo "file does not exist!"; \
 	fi
 
-.PHONY: str-custom str-provided %.test clean sgrep
+.PHONY: archive str-custom str-provided %.test clean sgrep
 .PRECIOUS: build/str.o build/tests/%.o build/tests/%.bin
