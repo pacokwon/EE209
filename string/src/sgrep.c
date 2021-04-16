@@ -1,3 +1,9 @@
+/**
+ * Author: Haechan Kwon (권해찬)
+ * Assignment: String (Assignment 2)
+ * Filename: sgrep.c
+ */
+
 #include "str.h"
 #include <stdio.h>
 #include <stdlib.h>

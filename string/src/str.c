@@ -1,3 +1,9 @@
+/**
+ * Author: Haechan Kwon (권해찬)
+ * Assignment: String (Assignment 2)
+ * Filename: str.c
+ */
+
 #include "str.h"
 #include <assert.h> /* to use assert() */
 #include <ctype.h>

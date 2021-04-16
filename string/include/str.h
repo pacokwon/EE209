@@ -1,3 +1,9 @@
+/**
+ * Author: Haechan Kwon (권해찬)
+ * Assignment: String (Assignment 2)
+ * Filename: str.h
+ */
+
 #ifndef _STR_H_
 #define _STR_H_
 #include <limits.h> /* for LONG_MIN, LONG_MAX */
