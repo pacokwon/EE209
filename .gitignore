@@ -64,3 +64,6 @@ string/build
 
 scratch/linkedlist/*.o
 scratch/linkedlist/main
+
+scratch/hashtable/*.o
+scratch/hashtable/main
