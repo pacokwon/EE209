@@ -61,3 +61,6 @@ decommenting/results
 decommenting/sample
 
 string/build
+
+scratch/linkedlist/*.o
+scratch/linkedlist/main
