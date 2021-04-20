@@ -1,3 +1,3 @@
 # Scratch
 
-Data structures covered in class, implemented from scratch.
+Sample concepts covered in class, implemented from scratch.
