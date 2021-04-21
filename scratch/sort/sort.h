@@ -5,8 +5,8 @@
 
 typedef int (*pivotfunc) (int, int);
 
-void quicksort(int *, int, pivotfunc);
-void quicksort_helper(int *, int, int, pivotfunc);
+void quick_sort(int *, int, pivotfunc);
+void merge_sort(int *, int);
 
 int middle_pivot(int, int);
 int leftmost_pivot(int, int);
