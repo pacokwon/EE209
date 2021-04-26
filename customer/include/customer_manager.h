@@ -41,7 +41,4 @@ int GetPurchaseByName(DB_T d, const char *name);
    and return the sum of all fp function calls */
 int GetSumCustomerPurchase(DB_T d, FUNCPTR_T fp);
 
-int SearchCustomer(DB_T db, const char *id, const char *name);
-void ExpandCustomerDB(DB_T db);
-
 #endif /* end of CUSTOMER_MANAGER_H */

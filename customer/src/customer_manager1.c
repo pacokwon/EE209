@@ -18,6 +18,9 @@ struct DB {
     int size;     // current array size
 };
 
+static void ExpandCustomerDB(DB_T db);
+static int SearchCustomer(DB_T db, const char *id, const char *name);
+
 /*--------------------------------------------------------------------*/
 DB_T CreateCustomerDB(void) {
     DB_T db;
@@ -49,28 +52,6 @@ void DestroyCustomerDB(DB_T db) {
 
     free(db->array);
     free(db);
-}
-
-void ExpandCustomerDB(DB_T db) {
-    if (db->capacity == db->size) {
-        db->capacity *= 2;
-        db->array =
-            realloc(db->array, db->capacity * sizeof(struct UserInfo));
-    }
-}
-
-/**
- * return the index of the array if customer with same id or name exists
- * return -1 otherwise
- */
-int SearchCustomer(DB_T db, const char *id, const char *name) {
-    for (int i = 0; i < db->size; i++) {
-        if ((id && !strcmp(db->array[i].id, id)) ||
-            (name && !strcmp(db->array[i].name, name)))
-            return i;
-    }
-
-    return -1;
 }
 
 /*--------------------------------------------------------------------*/
@@ -176,3 +157,26 @@ int GetSumCustomerPurchase(DB_T db, FUNCPTR_T fp) {
 
     return sum;
 }
+
+static void ExpandCustomerDB(DB_T db) {
+    if (db->capacity == db->size) {
+        db->capacity *= 2;
+        db->array =
+            realloc(db->array, db->capacity * sizeof(struct UserInfo));
+    }
+}
+
+/**
+ * return the index of the array if customer with same id or name exists
+ * return -1 otherwise
+ */
+static int SearchCustomer(DB_T db, const char *id, const char *name) {
+    for (int i = 0; i < db->size; i++) {
+        if ((id && !strcmp(db->array[i].id, id)) ||
+            (name && !strcmp(db->array[i].name, name)))
+            return i;
+    }
+
+    return -1;
+}
+
