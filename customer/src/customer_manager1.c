@@ -40,6 +40,7 @@ DB_T CreateCustomerDB(void) {
         free(db);
         return NULL;
     }
+
     return db;
 }
 
@@ -150,6 +151,9 @@ int GetPurchaseByName(DB_T db, const char *name) {
 
 /*--------------------------------------------------------------------*/
 int GetSumCustomerPurchase(DB_T db, FUNCPTR_T fp) {
+    if (db == NULL || fp == NULL)
+        return -1;
+
     int sum = 0;
 
     for (int i = 0; i < db->size; i++)
