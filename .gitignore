@@ -55,12 +55,10 @@ tags
 
 readme
 .cache
+**/*.o
+build
 
 decommenting/decomment
 decommenting/results
 decommenting/sample
-
-string/build
-
-scratch/**/*.o
 scratch/**/main
