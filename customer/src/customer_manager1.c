@@ -81,6 +81,7 @@ int RegisterCustomer(DB_T db, const char *id, const char *name,
 
     newUser->purchase = purchase;
     db->size++;
+    ExpandCustomerDB(db); // expand customer DB if necessary
 
     return 0;
 }
