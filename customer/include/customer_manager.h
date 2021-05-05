@@ -1,3 +1,9 @@
+/**
+ * Author: Haechan Kwon (권해찬)
+ * Assignment: Customer Management (Assignment 3)
+ * Filename: customer_manager.h
+ */
+
 #ifndef CUSTOMER_MANAGER_H
 #define CUSTOMER_MANAGER_H
 

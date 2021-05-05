@@ -1,31 +1,51 @@
+/**
+ * Author: Haechan Kwon (권해찬)
+ * Assignment: Customer Management (Assignment 3)
+ * Filename: customer_manager2.c
+ */
+
 #include "customer_manager.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define UNIT_BUCKET_SIZE    1024
-#define THRESHOLD_RATIO     0.75f
+#define UNIT_BUCKET_SIZE 1024
+#define THRESHOLD_RATIO 0.75f
 
 enum { HASH_MULTIPLIER = 65599 };
 
 struct UserInfo {
-    char *name;   // customer name
-    char *id;     // customer id
-    int purchase; // purchase amount (> 0)
+    // customer name
+    char *name;
 
+    // customer id
+    char *id;
+
+    // purchase amount (> 0)
+    int purchase;
+
+    // hash value of id and name. not the remainder but the whole value.
     unsigned int idHash;
     unsigned int nameHash;
 
+    // address of next element
     struct UserInfo *idNext;
     struct UserInfo *nameNext;
 };
 
 struct DB {
+    // buckets for id and name
     struct UserInfo **idTable;
     struct UserInfo **nameTable;
-    unsigned int capacity; // current bucket size (max # of elements)
-    unsigned int size; // current number of elements in the hash table
+
+    // current bucket size (max # of elements)
+    unsigned int capacity;
+
+    // current number of elements in the hash table
+    unsigned int size;
+
+    // threshold value of size. if size >= threshold, resize.
     unsigned int threshold;
 };
 
@@ -37,7 +57,15 @@ static struct UserInfo *UnlinkCustomerById(DB_T db, const char *id);
 static struct UserInfo *UnlinkCustomerByName(DB_T db, const char *name);
 static void rehash(DB_T db);
 
-/*--------------------------------------------------------------------*/
+/**
+ * CreateCustomerDB: create a new customer db
+ *
+ * this function allocates resources necessary for storing customer
+ * information, e.g. hash table for storing customer info with id and
+ * name as key respectively
+ *
+ * returns: pointer to newly allocated database
+ */
 DB_T CreateCustomerDB(void) {
     DB_T db;
 
@@ -72,7 +100,14 @@ DB_T CreateCustomerDB(void) {
     return db;
 }
 
-/*--------------------------------------------------------------------*/
+/**
+ * DestroyCustomerDB: destroy a customer db
+ *
+ * this function frees all dynamically allocated resources in the
+ * database
+ *
+ * param db: pointer to database
+ */
 void DestroyCustomerDB(DB_T db) {
     struct UserInfo *p, *nextp;
 
@@ -89,7 +124,16 @@ void DestroyCustomerDB(DB_T db) {
     free(db);
 }
 
-/*--------------------------------------------------------------------*/
+/**
+ * RegisterCustomer: register a new customer
+ *
+ * param db: pointer to database
+ * param id: pointer to null terminated string that contains customer's
+ * id param name: pointer to null terminated string that contains
+ * customer's name param purchase: purchase value of customer
+ *
+ * returns: 0 if customer is successfully registered. -1 otherwise
+ */
 int RegisterCustomer(DB_T db, const char *id, const char *name,
                      const int purchase) {
     if (db == NULL || id == NULL || name == NULL || purchase <= 0)
@@ -143,7 +187,16 @@ int RegisterCustomer(DB_T db, const char *id, const char *name,
     return 0;
 }
 
-/*--------------------------------------------------------------------*/
+/**
+ * UnregisterCustomerByID: unregister a customer by id
+ *
+ * remove AND free a customer entry with a given id
+ *
+ * param db: pointer to database
+ * param id: pointer to null terminated string that contains id
+ *
+ * returns: 0 if customer is successfully removed. -1 otherwise
+ */
 int UnregisterCustomerByID(DB_T db, const char *id) {
     if (db == NULL || id == NULL)
         return -1;
@@ -164,7 +217,16 @@ int UnregisterCustomerByID(DB_T db, const char *id) {
     return 0;
 }
 
-/*--------------------------------------------------------------------*/
+/**
+ * UnregisterCustomerByName: unregister a customer by name
+ *
+ * remove AND free a customer entry with a given name
+ *
+ * param db: pointer to database
+ * param name: pointer to null terminated string that contains name
+ *
+ * returns: 0 if customer is successfully removed. -1 otherwise
+ */
 int UnregisterCustomerByName(DB_T db, const char *name) {
     if (db == NULL || name == NULL)
         return -1;
@@ -185,7 +247,15 @@ int UnregisterCustomerByName(DB_T db, const char *name) {
     return 0;
 }
 
-/*--------------------------------------------------------------------*/
+/**
+ * GetPurchaseByID: get the purchase field of a customer by id
+ *
+ * param db: pointer to database
+ * param id: pointer to null terminated string that contains id
+ *
+ * returns: purchase field value of customer with id.
+ *  -1 if customer with id does not exist
+ */
 int GetPurchaseByID(DB_T db, const char *id) {
     if (db == NULL || id == NULL)
         return -1;
@@ -197,7 +267,15 @@ int GetPurchaseByID(DB_T db, const char *id) {
     return p->purchase;
 }
 
-/*--------------------------------------------------------------------*/
+/**
+ * GetPurchaseByName: get the purchase field of a customer by name
+ *
+ * param db: pointer to database
+ * param name: pointer to null terminated string that contains name
+ *
+ * returns: purchase field value of customer with name
+ *  -1 if customer with name does not exist
+ */
 int GetPurchaseByName(DB_T db, const char *name) {
     if (db == NULL || name == NULL)
         return -1;
@@ -209,7 +287,15 @@ int GetPurchaseByName(DB_T db, const char *name) {
     return p->purchase;
 }
 
-/*--------------------------------------------------------------------*/
+/**
+ * GetSumCustomerPurchase: apply a given function to all customers and
+ * get the sum of results
+ *
+ * param db: pointer to database
+ * param fp: pointer to a function of type FUNCPTR_T
+ *
+ * returns: sum of function applications to all customers
+ */
 int GetSumCustomerPurchase(DB_T db, FUNCPTR_T fp) {
     if (db == NULL || fp == NULL)
         return -1;
@@ -224,6 +310,14 @@ int GetSumCustomerPurchase(DB_T db, FUNCPTR_T fp) {
     return sum;
 }
 
+/**
+ * hashfunc_raw: computes the raw hash value of a string
+ *  here, 'raw' means 'not computed by modulo'
+ *
+ * param key: pointer to null terminated string
+ *
+ * returns: raw hash value
+ */
 static unsigned int hashfunc_raw(const char *key) {
     unsigned int hash = 0U;
     for (int i = 0; key[i] != '\0'; i++)
@@ -232,10 +326,28 @@ static unsigned int hashfunc_raw(const char *key) {
     return hash;
 }
 
+/**
+ * hashfunc: computes the hash value remainder of a string
+ *
+ * param key: pointer to null terminated string
+ * param bucketsize: size of bucket. a hash remainder will be computed
+ *  with this value
+ *
+ * returns: hash value
+ */
 static inline int hashfunc(const char *key, unsigned int bucketSize) {
     return (int)(hashfunc_raw(key) & (bucketSize - 1));
 }
 
+/**
+ * SearchCustomerById: search a customer by id
+ *
+ * param db: pointer to database
+ * param id: pointer to null terminated string containing id
+ *
+ * returns: pointer to customer. NULL if customer with the id does not
+ *  exist
+ */
 static struct UserInfo *SearchCustomerById(DB_T db, const char *id) {
     if (id == NULL)
         return NULL;
@@ -249,6 +361,15 @@ static struct UserInfo *SearchCustomerById(DB_T db, const char *id) {
     return NULL;
 }
 
+/**
+ * SearchCustomerByName: search a customer by name
+ *
+ * param db: pointer to database
+ * param name: pointer to null terminated string containing name
+ *
+ * returns: pointer to customer. NULL if customer with the name does not
+ * exist
+ */
 static struct UserInfo *SearchCustomerByName(DB_T db,
                                              const char *name) {
     if (name == NULL)
@@ -263,6 +384,17 @@ static struct UserInfo *SearchCustomerByName(DB_T db,
     return NULL;
 }
 
+/**
+ * UnlinkCustomerById: unlink a customer by id, and return the customer
+ *  'unlink' means simply removing the desired customer from the id hash
+ * table
+ *
+ * param db: pointer to database
+ * param id: pointer to null terminated string containing id
+ *
+ * returns: pointer to unlinked customer. NULL if customer with the id
+ * does not exist
+ */
 static struct UserInfo *UnlinkCustomerById(DB_T db, const char *id) {
     struct UserInfo *p, *before = NULL;
 
@@ -282,6 +414,17 @@ static struct UserInfo *UnlinkCustomerById(DB_T db, const char *id) {
     return NULL;
 }
 
+/**
+ * UnlinkCustomerByName: unlink a customer by name, and return the
+ * customer 'unlink' means simply removing the desired customer from the
+ * name hash table
+ *
+ * param db: pointer to database
+ * param name: pointer to null terminated string containing name
+ *
+ * returns: pointer to unlinked customer. NULL if customer with the name
+ * does not exist
+ */
 static struct UserInfo *UnlinkCustomerByName(DB_T db,
                                              const char *name) {
     struct UserInfo *p, *before = NULL;
@@ -303,6 +446,11 @@ static struct UserInfo *UnlinkCustomerByName(DB_T db,
     return NULL;
 }
 
+/**
+ * rehash: resize hash tables by rehashing them, but only if necessary
+ *
+ * param db: pointer to database
+ */
 static void rehash(DB_T db) {
     // if size is not over threshold, simply return
     if (db->size < db->threshold)
@@ -314,9 +462,9 @@ static void rehash(DB_T db) {
 
     struct UserInfo **newIdTable =
         calloc(newCapacity, sizeof(struct UserInfo *));
-    if (newIdTable == NULL) {
+    if (newIdTable == NULL)
         assert(1);
-    }
+
     struct UserInfo **newNameTable =
         calloc(newCapacity, sizeof(struct UserInfo *));
     if (newNameTable == NULL) {
