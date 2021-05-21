@@ -12,7 +12,7 @@ scanfFormat:
     .asciz "%s"
 
 digitFormat:
-    .asciz "Number %d\n"
+    .asciz "%d\n"
 
 threeDigitsFormat:
     .asciz "Number %d %d %c\n"
@@ -270,7 +270,7 @@ pCommand:
     jne     qCommand
 
     cmpl    %esp, %ebp # is stack pointer at the bottom?
-    je      pCommandEmpty
+    je      stackEmpty
 
     ##           printf("%d\n", (int)stack.top());
     pushl   (%esp) # stack.top()
@@ -280,7 +280,7 @@ pCommand:
     ##        continue;
     jmp     input
 
-pCommandEmpty:
+stackEmpty:
     ##           printf("dc: stack empty\n");
     pushl   $stackEmptyFormat
     call    printf
@@ -300,7 +300,7 @@ opCommand:
     addl    $4, %esp
 
     cmpl    $0, %eax
-    je      quit
+    je      fCommand
 
     movl    %esp, %eax
     addl    $8, %eax
@@ -320,6 +320,69 @@ opCommand:
 
     pushl   %eax
     jmp     input
+
+fCommand:
+    movsbl  (buffer), %eax
+    cmpl    $102, %eax # $102 -> 'f'
+    jne     cCommand
+
+    pushl   %esp
+__fCommand_loop:
+    # if cursor has reached the bottom, break out
+    cmpl    (%esp), %ebp
+    jle     __fCommand_loop_done
+
+    movl    (%esp), %eax
+    pushl   (%eax)
+    pushl   $digitFormat
+    call    printf
+    addl    $8, %esp
+
+    # move down the stack by 4
+    addl    $4, (%esp)
+    jmp     __fCommand_loop
+__fCommand_loop_done:
+    addl    $4, %esp
+    jmp     input
+
+# move the stack pointer to the bottom
+cCommand:
+    movsbl  (buffer), %eax
+    cmpl    $99, %eax # $99 -> 'c'
+    jne     dCommand
+
+    movl    %ebp, %esp
+    jmp     input
+
+dCommand:
+    movsbl  (buffer), %eax
+    cmpl    $100, %eax # $100 -> 'd'
+    jne     rCommand
+
+    # if stack is empty, print message
+    cmpl    %esp, %ebp
+    je      stackEmpty
+    pushl   (%esp)
+    jmp     input
+
+rCommand:
+    movsbl  (buffer), %eax
+    cmpl    $114, %eax # $114 -> 'r'
+    jne     input
+
+    movl    %esp, %eax
+    addl    $8, %eax
+    cmpl    %eax, %ebp
+    # must satisfy %ebp >= %esp + 8 (jge)
+    jl      stackEmpty
+
+    popl    %eax
+    popl    %ebx
+
+    pushl   %eax
+    pushl   %ebx
+
+    jmp    input
 
     ## PSEUDO-CODE
     ## /*
