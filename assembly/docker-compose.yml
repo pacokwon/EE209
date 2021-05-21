@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+  asm:
+    build:
+      context: .
+      args:
+        USER: 'ubuntu'
+        PASSWORD: '1234'
+    image: 'pacokwon/ee209-asm:20.04'
+    container_name: 'asm'
+    volumes:
+      - '.:/home/ubuntu/workspace'
