@@ -1,6 +1,8 @@
 AS = as
 CC = gcc
 
+dc:
+
 run:
 	docker compose run -d --name asm asm
 
