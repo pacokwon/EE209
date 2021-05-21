@@ -302,6 +302,12 @@ opCommand:
     cmpl    $0, %eax
     je      quit
 
+    movl    %esp, %eax
+    addl    $8, %eax
+    cmpl    %eax, %ebp
+    # must satisfy %ebp >= %esp + 8 (jge)
+    jl      stackEmpty
+
     movsbl  (buffer), %eax
     popl    %ebx # top element
     popl    %ecx # bottom element
