@@ -1,5 +1,6 @@
 AS = as
 CC = gcc
+CFLAGS = -Wall -Werror -ansi -pedantic -std=c99
 
 dc:
 
@@ -14,6 +15,13 @@ exec:
 
 %: src/%.s
 	$(AS) --32 -march=i386 $< -o $*.o
-	$(CC) -m32 -march=i386 $*.o -o $*
+	$(CC) $(CFLAGS) -m32 -march=i386 $*.o -o $*
 
-.PHONY: run down exec
+test: dc
+	make -C tests all
+
+clean:
+	make -C tests clean
+	@rm dc dc.o
+
+.PHONY: run down exec clean
