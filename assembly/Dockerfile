@@ -6,9 +6,7 @@ ENV HOME=/home/$USER
 
 RUN apt update && \
     apt upgrade -y && \
-    apt install -y software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && \
-    apt install -y sudo python3.6 gdb vim wget make gcc gcc-multilib g++-multilib
+    apt install -y sudo gdb vim wget make gcc gcc-multilib g++-multilib dc
 
 RUN useradd --create-home --shell /bin/bash $USER && \
     usermod -aG sudo $USER && \
