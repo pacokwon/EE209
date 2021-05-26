@@ -1,8 +1,9 @@
-### --------------------------------------------------------------------
-### mydc.s
-###
-### Desk Calculator (dc)
-### --------------------------------------------------------------------
+# --------------------------------------------------------------------
+# Author: Haechan Kwon (권해찬)
+# Assignment: Assembly (Assignment 4)
+# Filename: dc.s
+# Desk Calculator (dc)
+# --------------------------------------------------------------------
         .section ".rodata"
 scanfFormat:
     .asciz "%s"
@@ -15,16 +16,16 @@ charFormat:
 
 stackEmptyFormat:
     .asciz "dc: stack empty\n"
-### --------------------------------------------------------------------
+# --------------------------------------------------------------------
         .section ".data"
 
-### --------------------------------------------------------------------
+# --------------------------------------------------------------------
 
         .section ".bss"
 buffer:
         .skip  ARRAYSIZE
 
-### --------------------------------------------------------------------
+# --------------------------------------------------------------------
 
         .section ".text"
     ## -------------------------------------------------------------
@@ -223,32 +224,32 @@ input:
     .equ   ARRAYSIZE, 20
     .equ   EOF, -1
 
-    ## dc number stack initialized. %esp = %ebp
+    # dc number stack initialized. %esp = %ebp
 
-    ## scanf("%s", buffer)
+    # scanf("%s", buffer)
     pushl   $buffer
     pushl   $scanfFormat
     call    scanf
     addl    $8, %esp
 
-    ## check if user input EOF
+    # check if user input EOF
     cmp     $EOF, %eax
     je      quit
 
-    ##     if (isdigit(buffer[0]) || buffer[0] == '_') {
-    ## check first condition
+    #     if (isdigit(buffer[0]) || buffer[0] == '_') {
+    # check first condition
     movsbl  (buffer), %eax
 
     pushl   %eax
     call    isdigit
     addl    $4, %esp
 
-    ## if first condition is satisfied, then jump
+    # if first condition is satisfied, then jump
     cmpl    $0, %eax
     jne     isNumber
 
-    ## check second condition
-    ## if not satisfied, jump to end of if statement
+    # check second condition
+    # if not satisfied, jump to end of if statement
     movsbl  (buffer), %eax
     cmpl    $95, %eax
     jne     pCommand
@@ -259,14 +260,14 @@ isNumber:
     movb    $45, (buffer) # $45 -> '-'
 
 convert:
-    ##        num = atoi(buffer);
+    #        num = atoi(buffer);
     pushl   $buffer
     call    atoi
     addl    $4, %esp
-    ##        stack.push(num);    /* pushl num */
+    #        stack.push(num);    /* pushl num */
     pushl   %eax
 
-    ##        continue;
+    #        continue;
     jmp     input
 
 pCommand:
@@ -278,16 +279,16 @@ pCommand:
     cmpl    %esp, %ebp # is stack pointer at the bottom?
     je      stackEmpty
 
-    ##           printf("%d\n", (int)stack.top());
+    #           printf("%d\n", (int)stack.top());
     pushl   (%esp) # stack.top()
     pushl   $digitFormat
     call    printf
     addl    $8, %esp
-    ##        continue;
+    #        continue;
     jmp     input
 
 stackEmpty:
-    ##           printf("dc: stack empty\n");
+    #           printf("dc: stack empty\n");
     pushl   $stackEmptyFormat
     call    printf
     addl    $4, %esp
@@ -400,83 +401,83 @@ rCommand:
 
     jmp    input
 
-    ## PSEUDO-CODE
-    ## /*
-    ##  * In this pseudo-code we assume that you do not use no local variables
-    ##  * in the _main_ process stack. In case you want to allocate space for local
-    ##  * variables, please remember to update logic for 'empty dc stack' condition
-    ##  * (stack.peek() == NULL).
-    ##  */
-    ##
-    ##  while (1) {
-    ##     /* read the current line into buffer */
-    ##     if (scanf("%s", buffer) == EOF)
-    ##         return 0;
-    ##
-    ##     /* is this line a number? */
-    ##     if (isdigit(buffer[0]) || buffer[0] == '_') {
-    ##        int num;
-    ##        if (buffer[0] == '_') buffer[0] = '-';
-    ##        num = atoi(buffer);
-    ##        stack.push(num);    /* pushl num */
-    ##        continue;
-    ##     }
-    ##
-    ##     /* p command */
-    ##     if (buffer[0] == 'p') {
-    ##        if (stack.peek() == NULL) { /* is %esp == %ebp? */
-    ##           printf("dc: stack empty\n");
-    ##        } else {
-    ##           /* value is already pushed in the stack */
-    ##           printf("%d\n", (int)stack.top());
-    ##        }
-    ##        continue;
-    ##     }
-    ##
-    ##     /* q command */
-    ##     if (buffer[0] == 'q') {
-    ##        goto quit;
-    ##     }
-    ##
-    ##     /* + operation */
-    ##     if (buffer[0] == '+') {
-    ##        int a, b;
-    ##        if (stack.peek() == NULL) {
-    ##           printf("dc: stack empty\n");
-    ##           continue;
-    ##         }
-    ##         a = (int)stack.pop();
-    ##         if (stack.peek() == NULL) {
-    ##            printf("dc: stack empty\n");
-    ##            stack.push(a); /* pushl some register value */
-    ##            continue;
-    ##         }
-    ##         b = (int)stack.pop(); /* popl to some register */
-    ##         res = a + b;
-    ##         stack.push(res);
-    ##         continue;
-    ##     }
-    ##
-    ##     /* - operation */
-    ##     if (buffer[0] == '-') {
-    ##        /* ... */
-    ##     }
-    ##
-    ##     /* | operation */
-    ##     if (buffer[0] == '|') {
-    ##        /* pop two values & call abssum() */
-    ##     }
-    ##
-    ##     /* other operations and commands */
-    ##     if (/* others */) {
-    ##        /* ... and so on ... */
-    ##     }
-    ##
-    ##   } /* end of while */
-    ##
+    # PSEUDO-CODE
+     /*
+    #  * In this pseudo-code we assume that you do not use no local variables
+    #  * in the _main_ process stack. In case you want to allocate space for local
+    #  * variables, please remember to update logic for 'empty dc stack' condition
+    #  * (stack.peek() == NULL).
+    #  */
+    #
+    #  while (1) {
+    #     /* read the current line into buffer */
+    #     if (scanf("%s", buffer) == EOF)
+    #         return 0;
+    #
+    #     /* is this line a number? */
+    #     if (isdigit(buffer[0]) || buffer[0] == '_') {
+    #        int num;
+    #        if (buffer[0] == '_') buffer[0] = '-';
+    #        num = atoi(buffer);
+    #        stack.push(num);    /* pushl num */
+    #        continue;
+    #     }
+    #
+    #     /* p command */
+    #     if (buffer[0] == 'p') {
+    #        if (stack.peek() == NULL) { /* is %esp == %ebp? */
+    #           printf("dc: stack empty\n");
+    #        } else {
+    #           /* value is already pushed in the stack */
+    #           printf("%d\n", (int)stack.top());
+    #        }
+    #        continue;
+    #     }
+    #
+    #     /* q command */
+    #     if (buffer[0] == 'q') {
+    #        goto quit;
+    #     }
+    #
+    #     /* + operation */
+    #     if (buffer[0] == '+') {
+    #        int a, b;
+    #        if (stack.peek() == NULL) {
+    #           printf("dc: stack empty\n");
+    #           continue;
+    #         }
+    #         a = (int)stack.pop();
+    #         if (stack.peek() == NULL) {
+    #            printf("dc: stack empty\n");
+    #            stack.push(a); /* pushl some register value */
+    #            continue;
+    #         }
+    #         b = (int)stack.pop(); /* popl to some register */
+    #         res = a + b;
+    #         stack.push(res);
+    #         continue;
+    #     }
+    #
+    #     /* - operation */
+    #     if (buffer[0] == '-') {
+    #        /* ... */
+    #     }
+    #
+    #     /* | operation */
+    #     if (buffer[0] == '|') {
+    #        /* pop two values & call abssum() */
+    #     }
+    #
+    #     /* other operations and commands */
+    #     if (/* others */) {
+    #        /* ... and so on ... */
+    #     }
+    #
+    #   } /* end of while */
+    #
 
 quit:
-    ## return 0
+    # return 0
     movl    $0, %eax
     movl    %ebp, %esp
     popl    %ebp
