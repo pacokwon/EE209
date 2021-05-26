@@ -3,10 +3,6 @@
 ###
 ### Desk Calculator (dc)
 ### --------------------------------------------------------------------
-    .equ   ARRAYSIZE, 20
-    .equ   EOF, -1
-    .equ   INUM, -4
-
         .section ".rodata"
 scanfFormat:
     .asciz "%s"
@@ -44,8 +40,10 @@ buffer:
     .globl  main
     .type   main,@function
 
-## (char op)
-## is op one of (+, -, *, /, |) ?
+# is op one of (+, -, *, /, |) ?
+# int isOp (char op -> 0x4) {
+#     return (op == '+' || op == '-' || op == '*' || op == '/' || op == '|');
+# }
 isOp:
     ## return (op == '+' || op == '-' || op == '*' || op == '/' || op == '|')
     movl    0x4(%esp), %eax
@@ -72,7 +70,10 @@ __isOp_true:
 __isOp_done:
     ret
 
-## (int a)
+# int abs (int a -> 0x4) {
+#     if (a > 0) return a;
+#     else return -a;
+# }
 abs:
     movl    0x4(%esp), %eax
     cmpl    $0, %eax
@@ -81,6 +82,10 @@ abs:
 __abs_done:
     ret
 
+# int min (int a -> 0x4, int b -> 0x8) {
+#     if (b >= a) return a;
+#     else return b;
+# }
 min:
     movl    0x4(%esp), %eax
     cmpl    %eax, 0x8(%esp)
@@ -89,6 +94,10 @@ min:
 __min_done:
     ret
 
+# int max (int a -> 0x4, int b -> 0x8) {
+#     if (b < a) return a;
+#     else return b;
+# }
 max:
     movl    0x4(%esp), %eax
     cmpl    %eax, 0x8(%esp)
@@ -105,20 +114,24 @@ __max_done:
 #     return s;
 # }
 abssum:
+    .equ    SUM, -0x4
+    .equ    I, -0x8
+    .equ    MAX, -0xc
+
     pushl   %ebp
     movl    %esp, %ebp
 
-    # -4 is s
+    # push SUM
     pushl   $0
 
-    # -8 is i
+    # push I
     pushl   0xc(%ebp)
     pushl   0x8(%ebp)
     call    min
     addl    $8, %esp
     pushl   %eax
 
-    # -12 is max
+    # push MAX
     pushl   0xc(%ebp)
     pushl   0x8(%ebp)
     call    max
@@ -126,46 +139,47 @@ abssum:
     pushl   %eax
 
 __abssum_loop:
-    movl    -0x8(%ebp), %eax
-    cmpl    -0xc(%ebp), %eax
+    movl    I(%ebp), %eax
+    cmpl    MAX(%ebp), %eax
     jg      __abssum_loop_done
 
     pushl   %eax
     call    abs
     addl    $4, %esp
 
-    add     %eax, -0x4(%ebp)
-    incl    -0x8(%ebp)
+    add     %eax, SUM(%ebp)
+    incl    I(%ebp)
 
     jmp     __abssum_loop
 __abssum_loop_done:
-    movl    -0x4(%ebp), %eax
+    movl    SUM(%ebp), %eax
     movl    %ebp, %esp
     popl    %ebp
     ret
 
-## (int a -> 0x8, int b -> 0xc, char op -> 0x10)
+# int computeOP(int a -> 0x8, int b -> 0xc, char op -> 0x10) {
+#     if (op == '+') return a + b;
+#     else if (op == '-') return a - b;
+#     else if (op == '*') return a * b;
+#     else if (op == '/') return a / b;
+#     else return abssum(a, b);
+# }
 computeOp:
+    .equ    OPERAND_A, 0x8
+    .equ    OPERAND_B, 0xc
+    .equ    OPERATOR, 0x10
+
     pushl   %ebp
     movl    %esp, %ebp
 
-    movsbl  0x10(%ebp), %eax
-
-    # movl    0xc(%ebp), %ebx
-    # movl    0x8(%ebp), %ecx
-    # pushl   %eax
-    # pushl   %ebx
-    # pushl   %ecx
-    # pushl   $threeDigitsFormat
-    # call    printf
-    # addl    $16, %esp
+    movsbl  OPERATOR(%ebp), %eax
 
     cmpl    $43, %eax
     jne     computeOpSub
 
     # add operation (a + b)
-    movl    0x8(%ebp), %eax
-    addl    0xc(%ebp), %eax
+    movl    OPERAND_A(%ebp), %eax
+    addl    OPERAND_B(%ebp), %eax
     jmp     computeOpDone
 
 computeOpSub:
@@ -173,8 +187,8 @@ computeOpSub:
     jne     computeOpMul
 
     # sub operation (a - b)
-    movl    0x8(%ebp), %eax
-    subl    0xc(%ebp), %eax
+    movl    OPERAND_A(%ebp), %eax
+    subl    OPERAND_B(%ebp), %eax
     jmp     computeOpDone
 
 computeOpMul:
@@ -182,8 +196,8 @@ computeOpMul:
     jne     computeOpDiv
 
     # mul operation (a * b)
-    movl    0x8(%ebp), %eax
-    imull   0xc(%ebp), %eax
+    movl    OPERAND_A(%ebp), %eax
+    imull   OPERAND_B(%ebp), %eax
     jmp     computeOpDone
 
 computeOpDiv:
@@ -191,14 +205,14 @@ computeOpDiv:
     jne     computeOpAbsSum
 
     # div operation (a / b)
-    movl    0x8(%ebp), %eax
+    movl    OPERAND_A(%ebp), %eax
     cltd    # sign extend eax into edx:eax
-    idivl   0xc(%ebp)
+    idivl   OPERAND_B(%ebp)
     jmp     computeOpDone
 
 computeOpAbsSum:
-    pushl   0x8(%ebp)
-    pushl   0xc(%ebp)
+    pushl   OPERAND_A(%ebp)
+    pushl   OPERAND_B(%ebp)
     call    abssum
     addl    $8, %esp
 
@@ -212,6 +226,9 @@ main:
     movl    %esp, %ebp
 
 input:
+    .equ   ARRAYSIZE, 20
+    .equ   EOF, -1
+
     ## dc number stack initialized. %esp = %ebp
 
     ## scanf("%s", buffer)
@@ -255,16 +272,11 @@ convert:
     ##        stack.push(num);    /* pushl num */
     pushl   %eax
 
-    # # Number Debug
-    # pushl   %eax
-    # pushl   $digitFormat
-    # call    printf
-    # addl    $8, %esp
-
     ##        continue;
     jmp     input
 
 pCommand:
+    # if (buffer[0] == 'p')
     movsbl  (buffer), %eax
     cmpl    $112, %eax # $112 -> 'p'
     jne     qCommand
@@ -288,11 +300,14 @@ stackEmpty:
     jmp     input
 
 qCommand:
+    # if (buffer[0] == 'q')
     movsbl  (buffer), %eax
     cmpl    $113, %eax # $113 -> 'q'
     je      quit
 
 opCommand:
+    # if (isOp(buffer[0]))
+
     movsbl  (buffer), %eax
 
     pushl   %eax
@@ -305,13 +320,16 @@ opCommand:
     movl    %esp, %eax
     addl    $8, %eax
     cmpl    %eax, %ebp
-    # must satisfy %ebp >= %esp + 8 (jge)
+    # must satisfy %esp + 8 <= %ebp (jge)
     jl      stackEmpty
 
+    # stack.pop() twice
     movsbl  (buffer), %eax
     popl    %ebx # top element
     popl    %ecx # bottom element
 
+    # pass two popped values and
+    # the operator to computeOp
     pushl   %eax
     pushl   %ebx
     pushl   %ecx
@@ -322,6 +340,7 @@ opCommand:
     jmp     input
 
 fCommand:
+    # if (buffer[0] == 'f')
     movsbl  (buffer), %eax
     cmpl    $102, %eax # $102 -> 'f'
     jne     cCommand
@@ -347,6 +366,7 @@ __fCommand_loop_done:
 
 # move the stack pointer to the bottom
 cCommand:
+    # if (buffer[0] == 'c')
     movsbl  (buffer), %eax
     cmpl    $99, %eax # $99 -> 'c'
     jne     dCommand
@@ -355,6 +375,7 @@ cCommand:
     jmp     input
 
 dCommand:
+    # if (buffer[0] == 'd')
     movsbl  (buffer), %eax
     cmpl    $100, %eax # $100 -> 'd'
     jne     rCommand
@@ -366,6 +387,7 @@ dCommand:
     jmp     input
 
 rCommand:
+    # if (buffer[0] == 'r')
     movsbl  (buffer), %eax
     cmpl    $114, %eax # $114 -> 'r'
     jne     input
