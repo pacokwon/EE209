@@ -13,7 +13,12 @@ down:
 exec:
 	docker exec -it asm /bin/bash
 
-%: src/%.s
+archive: submission.tar.gz
+
+submission.tar.gz: mydc.s tests Makefile readme
+	tar -cvzf $@ $^
+
+%: %.s
 	$(AS) --32 -march=i386 $< -o $*.o
 	$(CC) $(CFLAGS) -m32 -march=i386 $*.o -o $*
 
