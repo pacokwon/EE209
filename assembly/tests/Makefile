@@ -1,6 +1,6 @@
 .SECONDARY:
 
-MY_DC = @../dc
+MY_DC = @../mydc
 DC = @dc
 RM = @rm
 TXT_FILES = $(shell find . -type f -name '*.txt')
@@ -23,7 +23,7 @@ clean:
 		echo "FAIL" | tee $*.result; \
 	fi;
 
-%.output: ../dc %.txt
+%.output: ../mydc %.txt
 	$(MY_DC) < $*.txt > $*.output
 
 %.expected: %.txt

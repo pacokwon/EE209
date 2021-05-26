@@ -62,7 +62,7 @@ decommenting/decomment
 decommenting/results
 decommenting/sample
 scratch/**/main
-assembly/dc
+assembly/mydc
 assembly/tests/*.result
 assembly/tests/*.output
 assembly/tests/*.expected

@@ -2,7 +2,7 @@ AS = as
 CC = gcc
 CFLAGS = -Wall -Werror -ansi -pedantic -std=c99
 
-dc:
+mydc:
 
 run:
 	docker compose run -d --name asm asm
@@ -17,11 +17,11 @@ exec:
 	$(AS) --32 -march=i386 $< -o $*.o
 	$(CC) $(CFLAGS) -m32 -march=i386 $*.o -o $*
 
-test: dc
+test: mydc
 	make -C tests all
 
 clean:
 	make -C tests clean
-	@rm dc dc.o
+	@rm mydc mydc.o
 
 .PHONY: run down exec clean

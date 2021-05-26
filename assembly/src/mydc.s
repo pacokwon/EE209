@@ -1,7 +1,7 @@
 # --------------------------------------------------------------------
 # Author: Haechan Kwon (권해찬)
 # Assignment: Assembly (Assignment 4)
-# Filename: dc.s
+# Filename: mydc.s
 # Desk Calculator (dc)
 # --------------------------------------------------------------------
         .section ".rodata"
