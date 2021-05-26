@@ -67,3 +67,4 @@ assembly/tests/*.result
 assembly/tests/*.output
 assembly/tests/*.expected
 !assembly/tests/abssum-*.expected
+!assembly/tests/r-bad.expected
