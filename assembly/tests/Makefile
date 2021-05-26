@@ -24,6 +24,6 @@ clean:
 	$(MY_DC) < $*.txt > $*.output
 
 %.expected: %.txt
-	$(DC) < $*.txt > $*.expected || true
+	$(DC) < $*.txt > $*.expected 2>&1 || true
 
 .PHONY: all clean
