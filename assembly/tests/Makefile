@@ -5,7 +5,10 @@ DC = @dc
 RM = @rm
 TXT_FILES = $(shell find . -type f -name '*.txt')
 RESULT_FILES = $(TXT_FILES:.txt=.result)
-EXPECTED_FILES = $(TXT_FILES:.txt=.expected)
+
+MY_TESTS = abssum-normal1 abssum-normal2 abssum-bad
+MY_EXPECTED_FILES = $(addprefix ./,$(addsuffix .expected,$(MY_TESTS)))
+EXPECTED_FILES = $(filter-out $(MY_EXPECTED_FILES),$(TXT_FILES:.txt=.expected))
 
 all: $(RESULT_FILES)
 
