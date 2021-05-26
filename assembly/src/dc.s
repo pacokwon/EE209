@@ -10,12 +10,6 @@ scanfFormat:
 digitFormat:
     .asciz "%d\n"
 
-threeDigitsFormat:
-    .asciz "Number %d %d %c\n"
-
-pCommandNotEmptyFormat:
-    .asciz "%d\n"
-
 charFormat:
     .asciz "%c\n"
 
@@ -286,7 +280,7 @@ pCommand:
 
     ##           printf("%d\n", (int)stack.top());
     pushl   (%esp) # stack.top()
-    pushl   $pCommandNotEmptyFormat
+    pushl   $digitFormat
     call    printf
     addl    $8, %esp
     ##        continue;
