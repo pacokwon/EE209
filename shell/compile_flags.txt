@@ -1,0 +1,5 @@
+-Iinclude
+-Wall
+-Werror
+-ansi
+-std=c99
