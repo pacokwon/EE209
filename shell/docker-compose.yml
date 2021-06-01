@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+  shell:
+    build:
+      context: .
+      args:
+        USER: 'ubuntu'
+        PASSWORD: '1234'
+    image: 'pacokwon/ee209-shell:20.04'
+    container_name: 'shell'
+    volumes:
+      - '.:/home/ubuntu/workspace'
