@@ -181,6 +181,7 @@ static void parsePipe(char *line, DynArray_T tokens, struct StateBox *box) {
 
   if (c == '\0') box->state = STATE_FINISH;
   else if (c == '&') box->state = STATE_BACKGROUND;
+  else if (c == '|') box->state = STATE_PIPE;
   else if (isspace(c)) box->state = STATE_START;
   else {
     box->state = STATE_WORD;
@@ -209,6 +210,8 @@ static void parseRedirect(char *line, DynArray_T tokens, struct StateBox *box) {
 
   if (c == '\0') box->state = STATE_FINISH;
   else if (c == '&') box->state = STATE_BACKGROUND;
+  else if (c == '<') box->state = STATE_REDIRECT_IN;
+  else if (c == '>') box->state = STATE_REDIRECT_OUT;
   else if (isspace(c)) box->state = STATE_START;
   else {
     box->state = STATE_WORD;
