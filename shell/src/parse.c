@@ -34,7 +34,7 @@ static struct Token *makeToken(char *line, struct StateBox *box,
                                enum TokenType type);
 static void freeToken(void *pvItem, void *pvExtra);
 
-bool parseLine(char *line, DynArray_T tokens) {
+enum ParseResult parseLine(char *line, DynArray_T tokens) {
   struct StateBox box = (struct StateBox){
       .isInsideQuote = false,
       .state = STATE_START,
@@ -68,9 +68,13 @@ bool parseLine(char *line, DynArray_T tokens) {
   }
 
   if (box.isInsideQuote)
-    printf("Could not find quote pair\n");
+    /* printf("Could not find quote pair\n"); */
+    return PARSE_NO_QUOTE_PAIR;
 
-  return true;
+  if (!DynArray_getLength(tokens))
+    return PARSE_NO_TOKENS;
+
+  return PARSE_SUCCESS;
 }
 
 void freeLine(DynArray_T tokens) {

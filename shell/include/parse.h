@@ -12,12 +12,18 @@ enum TokenType {
   TOKEN_BACKGROUND,
 };
 
+enum ParseResult {
+  PARSE_NO_TOKENS,
+  PARSE_NO_QUOTE_PAIR,
+  PARSE_SUCCESS,
+};
+
 struct Token {
   enum TokenType type;
   char *value;
 };
 
-bool parseLine(char *, DynArray_T);
+enum ParseResult parseLine(char *, DynArray_T);
 void freeLine(DynArray_T);
 void printToken(void *, void *);
 
