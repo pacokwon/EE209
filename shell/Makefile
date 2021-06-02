@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g3 -Iinclude -Wall -Werror -ansi -std=c99
+CFLAGS = -g3 -Iinclude -Wall -Werror -ansi -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE
 LDFLAGS = -Wall -Werror -std=c99
 
 ish: build/ish.o build/parse.o build/dynarray.o
