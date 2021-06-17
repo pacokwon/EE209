@@ -20,6 +20,7 @@ struct Job {
 
 void init_jobs(DynArray_T *);
 struct Job *add_job(DynArray_T, pid_t, enum ProcState);
+struct Job *get_latest_job(DynArray_T);
 bool delete_job(DynArray_T, pid_t);
 void free_jobs(DynArray_T);
 

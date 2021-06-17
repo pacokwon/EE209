@@ -65,6 +65,21 @@ void free_jobs(DynArray_T jobs) {
   DynArray_free(jobs);
 }
 
+struct Job *get_latest_job(DynArray_T jobs) {
+  int length = DynArray_getLength(jobs);
+  struct Job *latest = NULL;
+
+  for (int i = 0; i < length; i++) {
+    struct Job *job = DynArray_get(jobs, i);
+    if (!job) continue;
+
+    if (!latest || latest->jid < job->jid)
+      latest = job;
+  }
+
+  return latest;
+}
+
 static void free_single_job(void *pvItem, void *pvExtra) {
   free(pvItem);
 }
