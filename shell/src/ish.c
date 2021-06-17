@@ -147,6 +147,7 @@ void evaluate(char *cmd) {
     pid = run_command (fd_in, fd_out, argv);
     if (pid < 0) {
       // TODO: error handling!
+      assert(true);
     }
 
     // block signals before adding job
@@ -223,6 +224,7 @@ bool handle_if_builtin(DynArray_T tokens) {
                             : getenv("HOME");
     if (!chdir(dir)) {
       // TODO: print error message
+      assert(true);
     }
 
     return true;
@@ -299,6 +301,7 @@ struct Job *addjob(pid_t pid, enum ProcState state) {
   struct Job *new_job = calloc(1, sizeof(struct Job));
   if (new_job == NULL) {
     // TODO: error handling!
+    assert(true);
   }
 
   new_job->pid = pid;
