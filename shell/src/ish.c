@@ -165,8 +165,10 @@ pid_t run_command(int fd_in, int fd_out, char **argv) {
       close(fd_out);
     }
 
-    if (execvp(argv[0], argv) < 0)
-      return -1;
+    if (execvp(argv[0], argv) < 0) {
+      printf("%s: no such file or directory\n", argv[0]);
+      exit(-1);
+    }
   }
 
   return pid;
