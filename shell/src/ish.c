@@ -1,6 +1,7 @@
 #include "job.h"
 #include "parse.h"
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +30,7 @@ static bool is_background(DynArray_T);
 void wait_fg(struct Job *);
 void evaluate(char *);
 bool handle_if_builtin(DynArray_T);
-pid_t run_command(int, int, char **);
+pid_t run_command(int, int, struct ExecUnit *);
 int construct_exec_unit(DynArray_T, int, struct ExecUnit *);
 
 void sigchld_handler(int);
@@ -145,7 +146,7 @@ void evaluate(char *cmd) {
     }
 
     sigprocmask(SIG_BLOCK, &mask_child, &mask_prev);
-    pid = run_command (fd_in, fd_out, exec_unit.argv);
+    pid = run_command (fd_in, fd_out, &exec_unit);
     if (pid < 0) {
       // TODO: error handling!
       sigprocmask(SIG_SETMASK, &mask_prev, NULL);
@@ -187,12 +188,35 @@ void wait_fg(struct Job *job) {
     sleep(1);
 }
 
-pid_t run_command(int fd_in, int fd_out, char **argv) {
+pid_t run_command(int fd_in, int fd_out, struct ExecUnit *e) {
+  char **argv = e->argv;
+  int open_fd;
+
   pid_t pid = fork();
   if (pid == 0) {
     // this_process.gid <- this_process.pid
     // this is done to set this process's group id to be different from the shell
     setpgid(0, 0);
+
+    if (e->infile != NULL) {
+         /* (open_fd = open(e->infile, O_RDONLY)) >= 0) { */
+      if ((open_fd = open(e->infile, O_RDONLY)) < 0) {
+        fprintf(stderr, "%s: No such file or directory\n", filename);
+        exit(-1);
+      }
+
+      // close the pipe and use the file instead
+      close(fd_in);
+      fd_in = open_fd;
+    }
+
+    if (e->outfile != NULL
+        && (open_fd = open(e->outfile, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR)) >= 0) {
+      // close the pipe and use the file instead
+      close(fd_out);
+      fd_out = open_fd;
+    }
+
     if (fd_in != STDIN_FILENO) {
       dup2(fd_in, STDIN_FILENO);
       close(fd_in);
@@ -292,8 +316,11 @@ int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e)
   int argc = 0;
   struct Token *token;
 
+  e->infile = NULL;
+  e->outfile = NULL;
+
   // iteration #1, to compute `argc`
-  while (i < length && (token = DynArray_get(tokens, i))->type == TOKEN_WORD) {
+  while (i < length && ((struct Token *) DynArray_get(tokens, i))->type == TOKEN_WORD) {
     argc++;
     i++;
   }
@@ -310,10 +337,36 @@ int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e)
   argv[argc] = NULL;
   e->argv = argv;
 
-  while (i < length && (token = DynArray_get(tokens, i))->type != TOKEN_WORD) {
+  // the ith token is a token that is not a word. so one of:
+  // 1) redir in | 2) redir out | 3) pipe | 4) background
+
+  // if this loop ends,
+  // its either because the token is a pipe,
+  // or its the end of the list
+  while (i < length && (token = DynArray_get(tokens, i))->type != TOKEN_PIPE) {
+    enum TokenType type = token->type;
+
+    if (type == TOKEN_REDIRECT_IN || type == TOKEN_REDIRECT_OUT) {
+      token = DynArray_get(tokens, ++i);
+
+      if (token->type != TOKEN_WORD)
+        continue;
+
+      // NOTE: from here, `token` is a word
+      if (type == TOKEN_REDIRECT_IN)
+        e->infile = token->value;
+      else
+        e->outfile = token->value;
+    }
+
     i++;
   }
 
+  // ignore anything that comes in between a pipe and the next word
+  while (i < length && ((token = DynArray_get(tokens, i))->type != TOKEN_WORD))
+    i++;
+
+  // i will point to a word or an end of the token list
   return i;
 }
 
