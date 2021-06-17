@@ -20,11 +20,13 @@ struct ExecUnit {
 };
 
 DynArray_T jobs;
-char *prompt = "% ";
+char * const prompt = "% ";
+char * const rcfile = ".ishrc";
 char *filename;
 bool sigquit_active;
 
 void wait_fg(struct Job *);
+void run_rc_file();
 void evaluate(char *);
 bool handle_if_builtin(DynArray_T);
 pid_t run_command(int, int, struct ExecUnit *);
@@ -49,6 +51,8 @@ int main(int argc, char **argv) {
   signal(SIGQUIT, sigquit_handler);
   signal(SIGALRM, sigalrm_handler);
 
+  run_rc_file();
+
   while (true) {
     printf("%s", prompt);
 
@@ -60,7 +64,7 @@ int main(int argc, char **argv) {
 
     length = strlen(cmd);
     if (length > MAX_LINE_SIZE) {
-      printf("file name too long\n");
+      fprintf(stderr, "%s: command too long\n", filename);
       continue;
     }
 
@@ -79,13 +83,45 @@ int main(int argc, char **argv) {
   return 0;
 }
 
+void run_rc_file() {
+  FILE *rc;
+  char cmd[MAX_LINE_SIZE + 2];
+  int length;
+  char *homedir = getenv("HOME");
+  char *path_to_rc = malloc(strlen(homedir) + strlen(rcfile) + 2);
+
+  sprintf(path_to_rc, "%s/%s", homedir, rcfile);
+
+  rc = fopen(path_to_rc, "r");
+  free(path_to_rc);
+
+  if (rc == NULL)
+    return;
+
+  while (fgets(cmd, MAX_LINE_SIZE, rc)) {
+    length = strlen(cmd);
+
+    if (length > MAX_LINE_SIZE) {
+      fprintf(stderr, "%s: command too long\n", filename);
+      continue;
+    }
+
+    if (cmd[length - 1] == '\n')
+      cmd[length - 1] = '\0';
+
+    evaluate(cmd);
+
+    fflush(stdout);
+    fflush(stdout);
+  }
+}
+
 void evaluate(char *cmd) {
   DynArray_T tokens;
   enum ParseResult result;
   bool is_builtin, is_bg;
   int pipes, fd_in = STDIN_FILENO, fd_out = STDOUT_FILENO, token_cursor = 0;
   int fd[2];
-  /* pid_t pid; */
   sigset_t mask_all, mask_child, mask_prev;
 
   sigfillset(&mask_all);
