@@ -15,6 +15,7 @@
 DynArray_T jobs;
 char *prompt = "% ";
 char *filename;
+bool sigquit_active;
 
 static void count_pipes(void *, void *);
 static bool is_background(DynArray_T);
@@ -27,17 +28,22 @@ char **construct_args(DynArray_T, int *);
 
 void sigchld_handler(int);
 void sigint_handler(int);
+void sigquit_handler(int);
+void sigalrm_handler(int);
 
 int main(int argc, char **argv) {
   // one space for null, another for checking overflow
   char cmd[MAX_LINE_SIZE + 2];
   int length;
 
+  sigquit_active = false;
   filename = argv[0];
   init_jobs(&jobs);
 
   signal(SIGCHLD, sigchld_handler);
   signal(SIGINT, sigint_handler);
+  signal(SIGQUIT, sigquit_handler);
+  signal(SIGALRM, sigalrm_handler);
 
   while (true) {
     printf("%s", prompt);
@@ -329,6 +335,19 @@ void sigint_handler(int sig) {
   // send SIGINT signal to fg process
   if (job != NULL)
     kill(-job->pid, SIGINT);
+}
+
+void sigquit_handler(int sig) {
+  if (sigquit_active)
+    exit(0);
+
+  sigquit_active = true;
+  printf("\nType Ctrl-\\ again within 5 seconds to exit.\n");
+  alarm(5);
+}
+
+void sigalrm_handler(int sig) {
+  sigquit_active = false;
 }
 
 static bool is_background(DynArray_T tokens) {
