@@ -311,9 +311,7 @@ char **construct_args(DynArray_T tokens, int *token_cursor) {
   argv[argc] = NULL;
 
   while (i < length && (token = DynArray_get(tokens, i))->type != TOKEN_WORD) {
-    argv[j] = token->value;
     i++;
-    j++;
   }
 
   *token_cursor = i;
