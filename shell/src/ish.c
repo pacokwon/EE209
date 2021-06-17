@@ -1,5 +1,5 @@
-#include "parse.h"
 #include "job.h"
+#include "parse.h"
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -10,6 +10,13 @@
 
 // max line size including newline
 #define MAX_LINE_SIZE 1023
+
+// NOTE: echo "foo" | cat < Makefile -> prints contents of Makefile
+struct ExecUnit {
+  char **argv;
+  char *outfile;
+  char *infile;
+};
 
 DynArray_T jobs;
 char *prompt = "% ";
@@ -23,7 +30,7 @@ void wait_fg(struct Job *);
 void evaluate(char *);
 bool handle_if_builtin(DynArray_T);
 pid_t run_command(int, int, char **);
-char **construct_args(DynArray_T, int *);
+int construct_exec_unit(DynArray_T, int, struct ExecUnit *);
 
 void sigchld_handler(int);
 void sigint_handler(int);
@@ -80,7 +87,6 @@ void evaluate(char *cmd) {
   bool is_builtin, is_bg;
   int pipes, fd_in = STDIN_FILENO, fd_out = STDOUT_FILENO, token_cursor = 0;
   int fd[2];
-  char **argv;
   /* pid_t pid; */
   sigset_t mask_all, mask_child, mask_prev;
 
@@ -126,9 +132,10 @@ void evaluate(char *cmd) {
 
   for (int i = 0; i <= pipes; i++) {
     struct Job *job;
+    struct ExecUnit exec_unit;
     pid_t pid;
 
-    argv = construct_args(tokens, &token_cursor);
+    token_cursor = construct_exec_unit(tokens, token_cursor, &exec_unit);
 
     if (i != pipes) {
       pipe(fd);
@@ -138,11 +145,11 @@ void evaluate(char *cmd) {
     }
 
     sigprocmask(SIG_BLOCK, &mask_child, &mask_prev);
-    pid = run_command (fd_in, fd_out, argv);
+    pid = run_command (fd_in, fd_out, exec_unit.argv);
     if (pid < 0) {
       // TODO: error handling!
       sigprocmask(SIG_SETMASK, &mask_prev, NULL);
-      free(argv);
+      free(exec_unit.argv);
       if (i != pipes) close(fd[1]);
       goto done;
     }
@@ -153,7 +160,7 @@ void evaluate(char *cmd) {
     sigprocmask(SIG_SETMASK, &mask_prev, NULL);
 
     // parent does not use argv
-    free(argv);
+    free(exec_unit.argv);
 
     if (i != pipes) {
       close(fd[1]);
@@ -277,31 +284,23 @@ bool handle_if_builtin(DynArray_T tokens) {
   return is_built_in;
 }
 
-static void count_pipes(void *element, void *extra) {
-  struct Token *token = element;
-  int *sum = extra;
-
-  if (token->type == TOKEN_PIPE)
-    (*sum)++;
-}
-
 // construct an array of strings from a tokens dynarray
 // tokenCursor will be updated to point to the next command token
-char **construct_args(DynArray_T tokens, int *token_cursor) {
-  int i = *token_cursor, j;
+int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e) {
+  int i = token_cursor, j;
   int length = DynArray_getLength(tokens);
   int argc = 0;
   struct Token *token;
 
+  // iteration #1, to compute `argc`
   while (i < length && (token = DynArray_get(tokens, i))->type == TOKEN_WORD) {
     argc++;
     i++;
   }
 
   char **argv = calloc(argc + 1, sizeof(char *));
-
-  // iterate again
-  i = *token_cursor;
+  // iteration #2, to construct `argv`
+  i = token_cursor;
   j = 0;
   while (i < length && (token = DynArray_get(tokens, i))->type == TOKEN_WORD) {
     argv[j] = token->value;
@@ -309,14 +308,13 @@ char **construct_args(DynArray_T tokens, int *token_cursor) {
     j++;
   }
   argv[argc] = NULL;
+  e->argv = argv;
 
   while (i < length && (token = DynArray_get(tokens, i))->type != TOKEN_WORD) {
     i++;
   }
 
-  *token_cursor = i;
-
-  return argv;
+  return i;
 }
 
 void sigchld_handler(int sig) {
@@ -368,4 +366,12 @@ static bool is_background(DynArray_T tokens) {
   struct Token *token = DynArray_get(tokens, length - 1);
 
   return token && token->type == TOKEN_BACKGROUND;
+}
+
+static void count_pipes(void *element, void *extra) {
+  struct Token *token = element;
+  int *sum = extra;
+
+  if (token->type == TOKEN_PIPE)
+    (*sum)++;
 }
