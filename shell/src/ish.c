@@ -170,6 +170,18 @@ void evaluate(char *cmd) {
 
     token_cursor = construct_exec_unit(tokens, token_cursor, &exec_unit);
 
+    if (i > 0 && exec_unit.infile != NULL) {
+      fprintf(stderr, "%s: Multiple redirection of standard input\n", filename);
+      free(exec_unit.argv);
+      goto done;
+    }
+
+    if (i < pipes && exec_unit.outfile != NULL) {
+      fprintf(stderr, "%s: Multiple redirection of standard out\n", filename);
+      free(exec_unit.argv);
+      goto done;
+    }
+
     if (i != pipes) {
       pipe(fd);
       fd_out = fd[1];
