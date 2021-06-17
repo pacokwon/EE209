@@ -15,9 +15,12 @@
 DynArray_T jobs;
 char *prompt = "% ";
 
+static void count_pipes(void *, void *);
+static bool is_background(DynArray_T);
+
+void wait_fg(struct Job *);
 void evaluate(char *);
 bool handle_if_builtin(DynArray_T);
-void count_pipes(void *, void *);
 pid_t run_command(int, int, char **);
 char **construct_args(DynArray_T, int *);
 
@@ -37,9 +40,8 @@ int main(int argc, char **argv) {
 
     if (fgets(cmd, MAX_LINE_SIZE, stdin) == NULL) {
       // EOF, if code has reached here
-
-      printf ("\n"); // print newline before exiting
-      exit(0);
+      printf("\n"); // print newline before exiting
+      return 0;
     }
 
     length = strlen(cmd);
@@ -66,8 +68,8 @@ int main(int argc, char **argv) {
 void evaluate(char *cmd) {
   DynArray_T tokens;
   enum ParseResult result;
-  bool is_builtin;
-  int pipes, fd_in = STDIN_FILENO, fd_out = 0, token_cursor = 0;
+  bool is_builtin, is_bg;
+  int pipes, fd_in = STDIN_FILENO, fd_out = STDOUT_FILENO, token_cursor = 0;
   int fd[2];
   char **argv;
   /* pid_t pid; */
@@ -98,18 +100,18 @@ void evaluate(char *cmd) {
     return;
   }
 
-  /* if (result == PARSE_SUCCESS) { */
-  /*   DynArray_map(tokens, printToken, NULL); */
-  /* } */
-
   is_builtin = handle_if_builtin(tokens);
-  if (is_builtin) {
-    free_line(tokens);
-    return;
-  }
+  if (is_builtin)
+    goto done;
 
   pipes = 0;
   DynArray_map(tokens, count_pipes, &pipes);
+
+  is_bg = is_background(tokens);
+  if (is_bg && pipes != 0) {
+    fprintf(stderr, "Mixture of pipes and background process!\n");
+    goto done;
+  }
 
   /* printf ("# of pipes: %d\n", pipes); */
 
@@ -117,39 +119,56 @@ void evaluate(char *cmd) {
     struct Job *job;
     pid_t pid;
 
-    pipe(fd);
     argv = construct_args(tokens, &token_cursor);
-    // the last command needs to print out to stdout
-    fd_out = i == pipes ? STDOUT_FILENO : fd[1];
+
+    if (i != pipes) {
+      pipe(fd);
+      fd_out = fd[1];
+    } else {
+      fd_out = STDOUT_FILENO;
+    }
 
     sigprocmask(SIG_BLOCK, &mask_child, &mask_prev);
     pid = run_command (fd_in, fd_out, argv);
     if (pid < 0) {
       // TODO: error handling!
-      assert(true);
+      sigprocmask(SIG_SETMASK, &mask_prev, NULL);
+      free(argv);
+      if (i != pipes) close(fd[1]);
+      goto done;
     }
 
     // block signals before adding job
     sigprocmask(SIG_BLOCK, &mask_all, NULL);
-    job = add_job(jobs, pid, FOREGROUND);
+    job = add_job(jobs, pid, is_bg ? BACKGROUND : FOREGROUND);
     sigprocmask(SIG_SETMASK, &mask_prev, NULL);
 
     // parent does not use argv
     free(argv);
-    close(fd[1]);
-    fd_in = fd[0];
 
-    while (job->state == FOREGROUND)
-      sleep (1);
+    if (i != pipes) {
+      close(fd[1]);
+      fd_in = fd[0];
+    }
 
-    // free job after terminated
-    free (job);
+    // busy wait if foreground job
+    if (!is_bg) {
+      /* wait_fg(job); */
+      while (job->state == FOREGROUND)
+        sleep(1);
+
+      // free job after terminated
+      free(job);
+    }
   }
 
-  // close the last pipe's input fd, as no process uses it
-  close(fd_in);
-
+done:
   free_line(tokens);
+}
+
+void wait_fg(struct Job *job) {
+  while (job->state == FOREGROUND)
+    sleep(1);
 }
 
 pid_t run_command(int fd_in, int fd_out, char **argv) {
@@ -219,7 +238,7 @@ bool handle_if_builtin(DynArray_T tokens) {
   return is_built_in;
 }
 
-void count_pipes(void *element, void *extra) {
+static void count_pipes(void *element, void *extra) {
   struct Token *token = element;
   int *sum = extra;
 
@@ -278,4 +297,11 @@ void sigchld_handler(int sig) {
 
   if (errno == ECHILD)
     return;
+}
+
+static bool is_background(DynArray_T tokens) {
+  int length = DynArray_getLength(tokens);
+  struct Token *token = DynArray_get(tokens, length - 1);
+
+  return token && token->type == TOKEN_BACKGROUND;
 }
