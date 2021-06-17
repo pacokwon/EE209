@@ -36,6 +36,7 @@ static int allocate_job_id() {
 void evaluate(char *);
 bool handle_if_builtin(DynArray_T);
 void count_pipes(void *, void *);
+pid_t run_command(int, int, char **);
 char **construct_args(DynArray_T, int *);
 
 struct Job *addjob(pid_t, enum ProcState);
@@ -135,36 +136,17 @@ void evaluate(char *cmd) {
 
   for (int i = 0; i <= pipes; i++) {
     struct Job *job;
+    pid_t pid;
 
     pipe(fd);
-
     argv = construct_args(tokens, &token_cursor);
-
     // the last command needs to print out to stdout
     fd_out = i == pipes ? STDOUT_FILENO : fd[1];
 
     sigprocmask(SIG_BLOCK, &mask_child, &mask_prev);
-    pid_t pid = fork();
-    if (pid == 0) {
-      fg_pid = getpid();
-
-      if (fd_in != STDIN_FILENO) {
-        dup2(fd_in, 0);
-        close(fd_in);
-      }
-
-      if (fd_out != STDOUT_FILENO) {
-        dup2(fd_out, 0);
-        close(fd_out);
-      }
-
-      // restore the mask
-      sigprocmask(SIG_SETMASK, &mask_prev, NULL);
-      if (execvp(argv[0], argv) < 0) {
-        printf("Execvp Error!");
-        // TODO: Error Handling!
-        exit (-1);
-      }
+    pid = run_command (fd_in, fd_out, argv);
+    if (pid < 0) {
+      // TODO: error handling!
     }
 
     // block signals before adding job
@@ -187,6 +169,26 @@ void evaluate(char *cmd) {
   free_line(tokens);
 }
 
+pid_t run_command(int fd_in, int fd_out, char **argv) {
+  pid_t pid = fork();
+  if (pid == 0) {
+    fg_pid = getpid();
+
+    if (fd_in != STDIN_FILENO) {
+      dup2(fd_in, 0);
+      close(fd_in);
+    }
+
+    if (fd_out != STDOUT_FILENO) {
+      dup2(fd_out, 0);
+      close(fd_out);
+    }
+
+    if (execvp(argv[0], argv) < 0)
+      return -1;
+  }
+
+  return pid;
 }
 
 bool handle_if_builtin(DynArray_T tokens) {
@@ -315,10 +317,11 @@ struct Job *addjob(pid_t pid, enum ProcState state) {
 bool deletejob(pid_t pid) {
   for (int i = 0; i < DynArray_getLength(jobs); i++) {
     struct Job *job = DynArray_get(jobs, i);
-    if (job->pid == pid) {
-      job->state = TERMINATED;
-      return true;
-    }
+    if (job->pid != pid) continue;
+
+    // (job->pid == pid) from here!
+    job->state = TERMINATED;
+    return true;
   }
 
   return false;
