@@ -14,6 +14,7 @@
 
 // NOTE: echo "foo" | cat < Makefile -> prints contents of Makefile
 struct ExecUnit {
+  int argc;
   char **argv;
   char *outfile;
   char *infile;
@@ -170,10 +171,18 @@ void evaluate(char *cmd) {
 
     token_cursor = construct_exec_unit(tokens, token_cursor, &exec_unit);
 
-    if (i > 0 && exec_unit.infile != NULL) {
-      fprintf(stderr, "%s: Multiple redirection of standard input\n", filename);
-      free(exec_unit.argv);
-      goto done;
+    if (i > 0) {
+      if (exec_unit.argc == 0) {
+        fprintf(stderr, "%s: Pipe or redirection destination is not specified\n", filename);
+        free(exec_unit.argv);
+        goto done;
+      }
+
+      if (exec_unit.infile != NULL) {
+        fprintf(stderr, "%s: Multiple redirection of standard input\n", filename);
+        free(exec_unit.argv);
+        goto done;
+      }
     }
 
     if (i < pipes && exec_unit.outfile != NULL) {
@@ -381,6 +390,7 @@ int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e)
     j++;
   }
   argv[argc] = NULL;
+  e->argc = argc;
   e->argv = argv;
 
   // the ith token is a token that is not a word. so one of:
