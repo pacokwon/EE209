@@ -232,6 +232,18 @@ bool handle_if_builtin(DynArray_T tokens) {
   } else if (!strcmp(first->value, "exit")) {
     exit(0);
   } else if (!strcmp(first->value, "fg")) {
+    struct Job *job;
+    sigset_t sset, prev;
+
+    sigfillset(&sset);
+    sigprocmask(SIG_SETMASK, &sset, &prev);
+    job = get_latest_job(jobs);
+    assert(job);
+    job->state = FOREGROUND;
+    sigprocmask(SIG_SETMASK, &prev, NULL);
+
+    wait_fg(job);
+
     return true;
   }
 
