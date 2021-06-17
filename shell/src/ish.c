@@ -162,6 +162,9 @@ void evaluate(char *cmd) {
 
     while (job->state == FOREGROUND)
       sleep (1);
+
+    // free job after terminated
+    free (job);
   }
 
   // close the last pipe's input fd, as no process uses it
@@ -318,12 +321,29 @@ struct Job *addjob(pid_t pid, enum ProcState state) {
 }
 
 bool deletejob(pid_t pid) {
-  for (int i = 0; i < DynArray_getLength(jobs); i++) {
+  int length = DynArray_getLength(jobs);
+
+  for (int i = 0; i < length; i++) {
     struct Job *job = DynArray_get(jobs, i);
     if (job->pid != pid) continue;
 
-    // (job->pid == pid) from here!
-    job->state = TERMINATED;
+    // job found!
+
+    DynArray_removeAt(jobs, i);
+
+    if (job->state == BACKGROUND) {
+      // we don't need the object anymore; free it early
+      free(job);
+    }
+    else if (job->state == FOREGROUND) {
+      // job is needed,
+      // let the waiting part of the code free the job.
+      job->state = TERMINATED;
+    } else {
+      // error! state is faulty
+      assert(true);
+    }
+
     return true;
   }
 
