@@ -176,12 +176,12 @@ pid_t run_command(int fd_in, int fd_out, char **argv) {
     fg_pid = getpid();
 
     if (fd_in != STDIN_FILENO) {
-      dup2(fd_in, 0);
+      dup2(fd_in, STDIN_FILENO);
       close(fd_in);
     }
 
     if (fd_out != STDOUT_FILENO) {
-      dup2(fd_out, 0);
+      dup2(fd_out, STDOUT_FILENO);
       close(fd_out);
     }
 
