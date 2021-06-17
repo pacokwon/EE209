@@ -1,6 +1,5 @@
 #include "parse.h"
 #include "job.h"
-#include <assert.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -208,7 +207,8 @@ pid_t run_command(int fd_in, int fd_out, char **argv) {
 
 bool handle_if_builtin(DynArray_T tokens) {
   // length of more than 0 should be guaranteed
-  assert(DynArray_getLength(tokens));
+  if (!DynArray_getLength(tokens))
+    return false;
 
   bool is_built_in = false;
   int length = DynArray_getLength(tokens);
@@ -219,7 +219,11 @@ bool handle_if_builtin(DynArray_T tokens) {
   if (!strcmp(first->value, "setenv")) {
     char *var, *val;
 
-    assert(length >= 2);
+    if (length < 2) {
+      fprintf(stderr, "usage: setenv <variable> [<value>]\n");
+      return true;
+    }
+
     var = ((struct Token *)DynArray_get(tokens, 1))->value;
     val = length == 2 ? "" : ((struct Token *)DynArray_get(tokens, 2))->value;
     setenv(var, val, 1);
@@ -228,7 +232,11 @@ bool handle_if_builtin(DynArray_T tokens) {
   } else if (!strcmp(first->value, "unsetenv")) {
     char *var;
 
-    assert(length >= 2);
+    if (length < 2) {
+      fprintf(stderr, "usage: unsetenv <variable>\n");
+      return true;
+    }
+
     var = ((struct Token *)DynArray_get(tokens, 1))->value;
     unsetenv(var);
 
@@ -238,7 +246,7 @@ bool handle_if_builtin(DynArray_T tokens) {
                             : getenv("HOME");
 
     if (chdir(dir) < 0)
-      printf("%s: No such file or directory\n", filename);
+      fprintf(stderr, "%s: No such file or directory\n", filename);
 
     return true;
   } else if (!strcmp(first->value, "exit")) {
@@ -250,7 +258,14 @@ bool handle_if_builtin(DynArray_T tokens) {
     sigfillset(&sset);
     sigprocmask(SIG_SETMASK, &sset, &prev);
     job = get_latest_job(jobs);
-    assert(job);
+
+    // early return if no job exists
+    if (job == NULL) {
+      fprintf(stderr, "fg: no child processes\n");
+      sigprocmask(SIG_SETMASK, &prev, NULL);
+      return true;
+    }
+
     job->state = FOREGROUND;
     sigprocmask(SIG_SETMASK, &prev, NULL);
 
