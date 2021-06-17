@@ -300,7 +300,9 @@ bool handle_if_builtin(DynArray_T tokens) {
     job->state = FOREGROUND;
     sigprocmask(SIG_SETMASK, &prev, NULL);
 
+    printf("[%d] Latest background process is executing\n", job->pid);
     wait_fg(job);
+    printf("[%d]                           Done\n", job->pid);
 
     return true;
   }
