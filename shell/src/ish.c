@@ -14,6 +14,7 @@
 
 DynArray_T jobs;
 char *prompt = "% ";
+char *filename;
 
 static void count_pipes(void *, void *);
 static bool is_background(DynArray_T);
@@ -31,6 +32,7 @@ int main(int argc, char **argv) {
   char cmd[MAX_LINE_SIZE + 2];
   int length;
 
+  filename = argv[0];
   init_jobs(&jobs);
 
   signal(SIGCHLD, sigchld_handler);
@@ -223,10 +225,9 @@ bool handle_if_builtin(DynArray_T tokens) {
   } else if (!strcmp(first->value, "cd")) {
     char *dir = length == 2 ? ((struct Token *)DynArray_get(tokens, 1))->value
                             : getenv("HOME");
-    if (!chdir(dir)) {
-      // TODO: print error message
-      assert(true);
-    }
+
+    if (chdir(dir) < 0)
+      printf("%s: No such file or directory\n", filename);
 
     return true;
   } else if (!strcmp(first->value, "exit")) {
