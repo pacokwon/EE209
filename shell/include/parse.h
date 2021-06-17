@@ -23,8 +23,8 @@ struct Token {
   char *value;
 };
 
-enum ParseResult parseLine(char *, DynArray_T);
-void freeLine(DynArray_T);
-void printToken(void *, void *);
+enum ParseResult parse_line(char *, DynArray_T);
+void free_line(DynArray_T);
+void print_token(void *, void *);
 
 #endif

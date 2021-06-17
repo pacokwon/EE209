@@ -16,50 +16,50 @@ enum ParseState {
 };
 
 struct StateBox {
-  bool isInsideQuote;
+  bool is_inside_quote;
   enum ParseState state;
   int index;
-  int wordStartIndex;
+  int word_start_index;
 
   // number of characters in the current word
-  int wordCharCount;
+  int word_char_count;
 };
 
-static void parseStart(char *line, DynArray_T tokens, struct StateBox *box);
-static void parseWord(char *line, DynArray_T tokens, struct StateBox *box);
-static void parsePipe(char *line, DynArray_T tokens, struct StateBox *box);
-static void parseRedirect(char *line, DynArray_T tokens, struct StateBox *box);
-static void parseBackground(char *line, DynArray_T tokens, struct StateBox *box);
-static struct Token *makeToken(char *line, struct StateBox *box,
+static void parse_start(char *line, DynArray_T tokens, struct StateBox *box);
+static void parse_word(char *line, DynArray_T tokens, struct StateBox *box);
+static void parse_pipe(char *line, DynArray_T tokens, struct StateBox *box);
+static void parse_redirect(char *line, DynArray_T tokens, struct StateBox *box);
+static void parse_background(char *line, DynArray_T tokens, struct StateBox *box);
+static struct Token *make_token(char *line, struct StateBox *box,
                                enum TokenType type);
-static void freeToken(void *pvItem, void *pvExtra);
+static void free_token(void *pvItem, void *pvExtra);
 
-enum ParseResult parseLine(char *line, DynArray_T tokens) {
+enum ParseResult parse_line(char *line, DynArray_T tokens) {
   struct StateBox box = (struct StateBox){
-      .isInsideQuote = false,
+      .is_inside_quote = false,
       .state = STATE_START,
       .index = 0,
-      .wordStartIndex = 0,
-      .wordCharCount = 0,
+      .word_start_index = 0,
+      .word_char_count = 0,
   };
 
   while (box.state != STATE_FINISH) {
     switch (box.state) {
     case STATE_START:
-      parseStart(line, tokens, &box);
+      parse_start(line, tokens, &box);
       break;
     case STATE_WORD:
-      parseWord(line, tokens, &box);
+      parse_word(line, tokens, &box);
       break;
     case STATE_PIPE:
-      parsePipe(line, tokens, &box);
+      parse_pipe(line, tokens, &box);
       break;
     case STATE_REDIRECT_IN:
     case STATE_REDIRECT_OUT:
-      parseRedirect(line, tokens, &box);
+      parse_redirect(line, tokens, &box);
       break;
     case STATE_BACKGROUND:
-      parseBackground(line, tokens, &box);
+      parse_background(line, tokens, &box);
       break;
     case STATE_FINISH:
       assert("Shouldn't Reach Here!");
@@ -67,7 +67,7 @@ enum ParseResult parseLine(char *line, DynArray_T tokens) {
     }
   }
 
-  if (box.isInsideQuote)
+  if (box.is_inside_quote)
     /* printf("Could not find quote pair\n"); */
     return PARSE_NO_QUOTE_PAIR;
 
@@ -77,12 +77,12 @@ enum ParseResult parseLine(char *line, DynArray_T tokens) {
   return PARSE_SUCCESS;
 }
 
-void freeLine(DynArray_T tokens) {
-    DynArray_map(tokens, freeToken, NULL);
+void free_line(DynArray_T tokens) {
+    DynArray_map(tokens, free_token, NULL);
     DynArray_free(tokens);
 }
 
-static void parseStart(char *line, DynArray_T tokens, struct StateBox *box) {
+static void parse_start(char *line, DynArray_T tokens, struct StateBox *box) {
   char c = line[box->index];
   switch (c) {
   case '\0':
@@ -104,13 +104,13 @@ static void parseStart(char *line, DynArray_T tokens, struct StateBox *box) {
     if (isspace(c))
       break; // do nothing
     box->state = STATE_WORD;
-    box->wordStartIndex = box->index;
+    box->word_start_index = box->index;
 
     if (c == '"') {
-      box->isInsideQuote = true;
-      box->wordCharCount = 0;
+      box->is_inside_quote = true;
+      box->word_char_count = 0;
     } else {
-      box->wordCharCount = 1;
+      box->word_char_count = 1;
     }
   }
 
@@ -118,20 +118,20 @@ static void parseStart(char *line, DynArray_T tokens, struct StateBox *box) {
   return;
 }
 
-static void parseWord(char *line, DynArray_T tokens, struct StateBox *box) {
+static void parse_word(char *line, DynArray_T tokens, struct StateBox *box) {
   char c = line[box->index];
   bool shouldEarlyReturn = true;
   struct Token *token;
 
-  if (box->isInsideQuote) {
+  if (box->is_inside_quote) {
     if (c == '\0') {
       box->state = STATE_FINISH;
-      token = makeToken(line, box, TOKEN_WORD);
+      token = make_token(line, box, TOKEN_WORD);
       DynArray_add(tokens, token);
     } else if (c == '"') {
-      assert(box->isInsideQuote);
-      box->isInsideQuote = false;
-      box->wordCharCount--; // hack; decrement beforehand
+      assert(box->is_inside_quote);
+      box->is_inside_quote = false;
+      box->word_char_count--; // hack; decrement beforehand
     }
   } else {
     switch (c) {
@@ -155,7 +155,7 @@ static void parseWord(char *line, DynArray_T tokens, struct StateBox *box) {
     }
 
     if (shouldEarlyReturn) {
-      token = makeToken(line, box, TOKEN_WORD);
+      token = make_token(line, box, TOKEN_WORD);
       DynArray_add(tokens, token);
       box->index++;
       return;
@@ -163,24 +163,24 @@ static void parseWord(char *line, DynArray_T tokens, struct StateBox *box) {
 
     if (isspace(c)) {
       box->state = STATE_START;
-      token = makeToken(line, box, TOKEN_WORD);
+      token = make_token(line, box, TOKEN_WORD);
       DynArray_add(tokens, token);
     } else if (c == '"') {
-      box->isInsideQuote = true;
-      box->wordCharCount--; // hack; decrement beforehand
+      box->is_inside_quote = true;
+      box->word_char_count--; // hack; decrement beforehand
     }
   }
 
   box->index++;
 
   // has no meaning if state is being transferred
-  box->wordCharCount++;
+  box->word_char_count++;
   return;
 }
 
-static void parsePipe(char *line, DynArray_T tokens, struct StateBox *box) {
+static void parse_pipe(char *line, DynArray_T tokens, struct StateBox *box) {
   char c = line[box->index];
-  struct Token *token = makeToken(line, box, TOKEN_PIPE);
+  struct Token *token = make_token(line, box, TOKEN_PIPE);
   DynArray_add(tokens, token);
 
   if (c == '\0') box->state = STATE_FINISH;
@@ -189,14 +189,14 @@ static void parsePipe(char *line, DynArray_T tokens, struct StateBox *box) {
   else if (isspace(c)) box->state = STATE_START;
   else {
     box->state = STATE_WORD;
-    box->wordStartIndex = box->index;
+    box->word_start_index = box->index;
 
     if (c == '"') {
-      assert(!box->isInsideQuote);
-      box->isInsideQuote = true;
-      box->wordCharCount = 0;
+      assert(!box->is_inside_quote);
+      box->is_inside_quote = true;
+      box->word_char_count = 0;
     } else {
-      box->wordCharCount = 1;
+      box->word_char_count = 1;
     }
   }
 
@@ -204,12 +204,12 @@ static void parsePipe(char *line, DynArray_T tokens, struct StateBox *box) {
   return;
 }
 
-static void parseRedirect(char *line, DynArray_T tokens, struct StateBox *box) {
+static void parse_redirect(char *line, DynArray_T tokens, struct StateBox *box) {
   assert(box->state == STATE_REDIRECT_IN || box->state == STATE_REDIRECT_OUT);
 
   char c = line[box->index];
   enum TokenType type = box->state == STATE_REDIRECT_IN ? TOKEN_REDIRECT_IN : TOKEN_REDIRECT_OUT;
-  struct Token *token = makeToken(line, box, type);
+  struct Token *token = make_token(line, box, type);
   DynArray_add(tokens, token);
 
   if (c == '\0') box->state = STATE_FINISH;
@@ -219,14 +219,14 @@ static void parseRedirect(char *line, DynArray_T tokens, struct StateBox *box) {
   else if (isspace(c)) box->state = STATE_START;
   else {
     box->state = STATE_WORD;
-    box->wordStartIndex = box->index;
+    box->word_start_index = box->index;
 
     if (c == '"') {
-      assert(!box->isInsideQuote);
-      box->isInsideQuote = true;
-      box->wordCharCount = 0;
+      assert(!box->is_inside_quote);
+      box->is_inside_quote = true;
+      box->word_char_count = 0;
     } else {
-      box->wordCharCount = 1;
+      box->word_char_count = 1;
     }
   }
 
@@ -234,8 +234,8 @@ static void parseRedirect(char *line, DynArray_T tokens, struct StateBox *box) {
   return;
 }
 
-static void parseBackground(char *line, DynArray_T tokens, struct StateBox *box) {
-  struct Token *token = makeToken(line, box, TOKEN_BACKGROUND);
+static void parse_background(char *line, DynArray_T tokens, struct StateBox *box) {
+  struct Token *token = make_token(line, box, TOKEN_BACKGROUND);
   DynArray_add(tokens, token);
 
   box->state = STATE_FINISH;
@@ -243,11 +243,11 @@ static void parseBackground(char *line, DynArray_T tokens, struct StateBox *box)
   return;
 }
 
-static struct Token *makeToken(char *line, struct StateBox *box,
+static struct Token *make_token(char *line, struct StateBox *box,
                                enum TokenType type) {
-  int start = box->wordStartIndex;
+  int start = box->word_start_index;
   int end = box->index;
-  int size = box->wordCharCount;
+  int size = box->word_char_count;
 
   // empty strings are also not allowed
   assert(start < end);
@@ -284,7 +284,7 @@ static struct Token *makeToken(char *line, struct StateBox *box,
   return token;
 }
 
-static void freeToken(void *pvItem, void *pvExtra) {
+static void free_token(void *pvItem, void *pvExtra) {
    struct Token *token = (struct Token *) pvItem;
    if (token->type == TOKEN_WORD)
      free(token->value);
@@ -292,7 +292,7 @@ static void freeToken(void *pvItem, void *pvExtra) {
    free(token);
 }
 
-void printToken(void *pvItem, void *pvExtra) {
+void print_token(void *pvItem, void *pvExtra) {
   struct Token *token = (struct Token *) pvItem;
 
   if (token->type == TOKEN_WORD) printf("TOKEN_WORD\t%s\n", token->value);
