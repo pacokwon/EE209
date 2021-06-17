@@ -26,6 +26,7 @@ pid_t run_command(int, int, char **);
 char **construct_args(DynArray_T, int *);
 
 void sigchld_handler(int);
+void sigint_handler(int);
 
 int main(int argc, char **argv) {
   // one space for null, another for checking overflow
@@ -36,6 +37,7 @@ int main(int argc, char **argv) {
   init_jobs(&jobs);
 
   signal(SIGCHLD, sigchld_handler);
+  signal(SIGINT, sigint_handler);
 
   while (true) {
     printf("%s", prompt);
@@ -176,6 +178,9 @@ void wait_fg(struct Job *job) {
 pid_t run_command(int fd_in, int fd_out, char **argv) {
   pid_t pid = fork();
   if (pid == 0) {
+    // this_process.gid <- this_process.pid
+    // this is done to set this process's group id to be different from the shell
+    setpgid(0, 0);
     if (fd_in != STDIN_FILENO) {
       dup2(fd_in, STDIN_FILENO);
       close(fd_in);
@@ -310,6 +315,20 @@ void sigchld_handler(int sig) {
 
   if (errno == ECHILD)
     return;
+}
+
+void sigint_handler(int sig) {
+  struct Job *job;
+  sigset_t mask_all, mask_original;
+
+  sigfillset(&mask_all);
+  sigprocmask(SIG_BLOCK, &mask_all, &mask_original);
+  job = get_foreground_job(jobs);
+  sigprocmask(SIG_SETMASK, &mask_original, NULL);
+
+  // send SIGINT signal to fg process
+  if (job != NULL)
+    kill(-job->pid, SIGINT);
 }
 
 static bool is_background(DynArray_T tokens) {

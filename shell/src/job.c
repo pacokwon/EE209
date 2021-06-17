@@ -82,6 +82,20 @@ struct Job *get_latest_job(DynArray_T jobs) {
   return latest;
 }
 
+struct Job *get_foreground_job(DynArray_T jobs) {
+  int length = DynArray_getLength(jobs);
+
+  for (int i = 0; i < length; i++) {
+    struct Job *job = DynArray_get(jobs, i);
+    if (!job) continue;
+
+    if (job && job->state == FOREGROUND)
+      return job;
+  }
+
+  return NULL;
+}
+
 static void free_single_job(void *pvItem, void *pvExtra) {
   free(pvItem);
 }
