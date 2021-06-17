@@ -24,9 +24,6 @@ char *prompt = "% ";
 char *filename;
 bool sigquit_active;
 
-static void count_pipes(void *, void *);
-static bool is_background(DynArray_T);
-
 void wait_fg(struct Job *);
 void evaluate(char *);
 bool handle_if_builtin(DynArray_T);
@@ -120,8 +117,7 @@ void evaluate(char *cmd) {
   if (is_builtin)
     goto done;
 
-  pipes = 0;
-  DynArray_map(tokens, count_pipes, &pipes);
+  pipes = count_pipes(tokens);
 
   is_bg = is_background(tokens);
   if (is_bg && pipes != 0) {
@@ -414,19 +410,4 @@ void sigquit_handler(int sig) {
 
 void sigalrm_handler(int sig) {
   sigquit_active = false;
-}
-
-static bool is_background(DynArray_T tokens) {
-  int length = DynArray_getLength(tokens);
-  struct Token *token = DynArray_get(tokens, length - 1);
-
-  return token && token->type == TOKEN_BACKGROUND;
-}
-
-static void count_pipes(void *element, void *extra) {
-  struct Token *token = element;
-  int *sum = extra;
-
-  if (token->type == TOKEN_PIPE)
-    (*sum)++;
 }

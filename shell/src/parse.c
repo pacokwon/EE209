@@ -33,6 +33,7 @@ static void parse_background(char *line, DynArray_T tokens, struct StateBox *box
 static struct Token *make_token(char *line, struct StateBox *box,
                                enum TokenType type);
 static void free_token(void *pvItem, void *pvExtra);
+static void count_pipes_helper(void *, void *);
 
 enum ParseResult parse_line(char *line, DynArray_T tokens) {
   struct StateBox box = (struct StateBox){
@@ -301,4 +302,25 @@ void print_token(void *pvItem, void *pvExtra) {
   else if (token->type == TOKEN_REDIRECT_OUT) printf("TOKEN_REDIR_OUT\t>\n");
   else if (token->type == TOKEN_BACKGROUND) printf("TOKEN_BACKGROUND\t&\n");
   else printf("Invalid Token\n");
+}
+
+int count_pipes(DynArray_T tokens) {
+  int pipes = 0;
+  DynArray_map(tokens, count_pipes_helper, &pipes);
+  return pipes;
+}
+
+static void count_pipes_helper(void *element, void *extra) {
+  struct Token *token = element;
+  int *sum = extra;
+
+  if (token->type == TOKEN_PIPE)
+    (*sum)++;
+}
+
+bool is_background(DynArray_T tokens) {
+  int length = DynArray_getLength(tokens);
+  struct Token *token = DynArray_get(tokens, length - 1);
+
+  return token && token->type == TOKEN_BACKGROUND;
 }

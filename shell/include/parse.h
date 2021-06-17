@@ -26,5 +26,7 @@ struct Token {
 enum ParseResult parse_line(char *, DynArray_T);
 void free_line(DynArray_T);
 void print_token(void *, void *);
+int count_pipes(DynArray_T);
+bool is_background(DynArray_T);
 
 #endif
