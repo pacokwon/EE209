@@ -1,5 +1,6 @@
 #include "job.h"
 #include "dynarray.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -43,6 +44,7 @@ bool delete_job(DynArray_T jobs, pid_t pid) {
 
     if (job->state == BACKGROUND) {
       // we don't need the object anymore; free it early
+      printf("child %d terminated normally\n", pid);
       free(job);
     }
     else if (job->state == FOREGROUND) {
