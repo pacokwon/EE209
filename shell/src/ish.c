@@ -13,8 +13,8 @@
 
 enum ProcState {
   UNDEF,
-  FG,
-  BG,
+  FOREGROUND,
+  BACKGROUND,
   TERMINATED,
 };
 
@@ -169,7 +169,7 @@ void evaluate(char *cmd) {
 
     // block signals before adding job
     sigprocmask(SIG_BLOCK, &mask_all, NULL);
-    job = addjob(pid, FG);
+    job = addjob(pid, FOREGROUND);
     sigprocmask(SIG_SETMASK, &mask_prev, NULL);
 
     // parent does not use argv
@@ -177,7 +177,7 @@ void evaluate(char *cmd) {
     close(fd[1]);
     fd_in = fd[0];
 
-    while (job->state == FG)
+    while (job->state == FOREGROUND)
       sleep (1);
   }
 
