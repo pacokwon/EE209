@@ -14,7 +14,6 @@
 
 DynArray_T jobs;
 char *prompt = "% ";
-pid_t fg_pid;
 
 void evaluate(char *);
 bool handle_if_builtin(DynArray_T);
@@ -30,7 +29,6 @@ int main(int argc, char **argv) {
   int length;
 
   init_jobs(&jobs);
-  fg_pid = 0;
 
   signal(SIGCHLD, sigchld_handler);
 
@@ -157,8 +155,6 @@ void evaluate(char *cmd) {
 pid_t run_command(int fd_in, int fd_out, char **argv) {
   pid_t pid = fork();
   if (pid == 0) {
-    fg_pid = getpid();
-
     if (fd_in != STDIN_FILENO) {
       dup2(fd_in, STDIN_FILENO);
       close(fd_in);
