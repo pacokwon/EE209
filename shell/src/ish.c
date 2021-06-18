@@ -22,16 +22,16 @@ enum BuiltinType {
 DynArray_T jobs;
 char * const prompt = "% ";
 char * const rcfilename = ".ishrc";
-char *filename;
+char *shell_name;
 bool sigquit_active;
 
-void cleanup();
-void wait_fg(struct Job *);
-void run_rc_file();
 bool evaluate(char *);
 enum BuiltinType handle_if_builtin(DynArray_T);
-pid_t run_command(int, int, struct ExecUnit *);
 int construct_exec_unit(DynArray_T, int, struct ExecUnit *);
+pid_t run_command(int, int, struct ExecUnit *);
+void cleanup();
+void run_rc_file();
+void wait_fg(struct Job *);
 
 void sigchld_handler(int);
 void sigint_handler(int);
@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
   bool should_continue = true;
 
   sigquit_active = false;
-  filename = argv[0];
+  shell_name = argv[0];
   init_jobs(&jobs);
 
   signal(SIGCHLD, sigchld_handler);
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 
     length = strlen(cmd);
     if (length > MAX_LINE_SIZE) {
-      fprintf(stderr, "%s: command too long\n", filename);
+      fprintf(stderr, "%s: command too long\n", shell_name);
       continue;
     }
 
@@ -105,7 +105,7 @@ void run_rc_file() {
     length = strlen(cmd);
 
     if (length > MAX_LINE_SIZE) {
-      fprintf(stderr, "%s: command too long\n", filename);
+      fprintf(stderr, "%s: command too long\n", shell_name);
       continue;
     }
 
@@ -162,7 +162,7 @@ bool evaluate(char *cmd) {
 
   if (result != PARSE_SUCCESS) {
     if (result == PARSE_NO_QUOTE_PAIR)
-      fprintf(stderr, "%s: Could not find quote pair\n", filename);
+      fprintf(stderr, "%s: Could not find quote pair\n", shell_name);
 
     free_line(tokens);
     return true;
@@ -194,20 +194,20 @@ bool evaluate(char *cmd) {
 
     if (i > 0) {
       if (exec_unit.argc == 0) {
-        fprintf(stderr, "%s: Pipe or redirection destination is not specified\n", filename);
+        fprintf(stderr, "%s: Pipe or redirection destination is not specified\n", shell_name);
         free(exec_unit.argv);
         goto done;
       }
 
       if (exec_unit.infile != NULL) {
-        fprintf(stderr, "%s: Multiple redirection of standard input\n", filename);
+        fprintf(stderr, "%s: Multiple redirection of standard input\n", shell_name);
         free(exec_unit.argv);
         goto done;
       }
     }
 
     if (i < pipes && exec_unit.outfile != NULL) {
-      fprintf(stderr, "%s: Multiple redirection of standard out\n", filename);
+      fprintf(stderr, "%s: Multiple redirection of standard out\n", shell_name);
       free(exec_unit.argv);
       goto done;
     }
@@ -273,9 +273,8 @@ pid_t run_command(int fd_in, int fd_out, struct ExecUnit *e) {
     /* setpgid(0, 0); */
 
     if (e->infile != NULL) {
-         /* (open_fd = open(e->infile, O_RDONLY)) >= 0) { */
       if ((open_fd = open(e->infile, O_RDONLY)) < 0) {
-        fprintf(stderr, "%s: No such file or directory\n", filename);
+        fprintf(stderr, "%s: No such file or directory\n", shell_name);
         exit(-1);
       }
 
@@ -324,7 +323,7 @@ enum BuiltinType handle_if_builtin(DynArray_T tokens) {
     char *var, *val;
 
     if (length < 2) {
-      fprintf(stderr, "%s: setenv takes one or two parameters\n", filename);
+      fprintf(stderr, "%s: setenv takes one or two parameters\n", shell_name);
       return IS_BUILTIN;
     }
 
@@ -337,7 +336,7 @@ enum BuiltinType handle_if_builtin(DynArray_T tokens) {
     char *var;
 
     if (length < 2) {
-      fprintf(stderr, "%s: unsetenv takes one parameter\n", filename);
+      fprintf(stderr, "%s: unsetenv takes one parameter\n", shell_name);
       return IS_BUILTIN;
     }
 
@@ -350,7 +349,7 @@ enum BuiltinType handle_if_builtin(DynArray_T tokens) {
                             : getenv("HOME");
 
     if (chdir(dir) < 0)
-      fprintf(stderr, "%s: No such file or directory\n", filename);
+      fprintf(stderr, "%s: No such file or directory\n", shell_name);
 
     return IS_BUILTIN;
   } else if (!strcmp(first->value, "exit")) {

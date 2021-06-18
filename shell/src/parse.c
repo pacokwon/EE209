@@ -369,10 +369,10 @@ int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e)
 
       if (token->type != TOKEN_WORD) {
         if (type == TOKEN_REDIRECT_IN)
-          fprintf(stderr, "%s: Standard input redirection without file name\n", filename);
+          fprintf(stderr, "%s: Standard input redirection without file name\n", shell_name);
 
         if (type == TOKEN_REDIRECT_OUT)
-          fprintf(stderr, "%s: Standard output redirection without file name\n", filename);
+          fprintf(stderr, "%s: Standard output redirection without file name\n", shell_name);
 
         return -1;
       }
@@ -380,14 +380,14 @@ int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e)
       // NOTE: from here, `token` is a word
       if (type == TOKEN_REDIRECT_IN) {
         if (e->infile != NULL) {
-          fprintf(stderr, "%s: Multiple redirection of standard input\n", filename);
+          fprintf(stderr, "%s: Multiple redirection of standard input\n", shell_name);
           return -1;
         }
 
         e->infile = token->value;
       } else {
         if (e->outfile != NULL) {
-          fprintf(stderr, "%s: Multiple redirection of standard out\n", filename);
+          fprintf(stderr, "%s: Multiple redirection of standard out\n", shell_name);
           return -1;
         }
 
