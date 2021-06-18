@@ -162,8 +162,6 @@ void evaluate(char *cmd) {
     goto done;
   }
 
-  /* printf ("# of pipes: %d\n", pipes); */
-
   for (int i = 0; i <= pipes; i++) {
     struct Job *job;
     struct ExecUnit exec_unit;
@@ -223,6 +221,7 @@ void evaluate(char *cmd) {
 
     // busy wait if foreground job
     if (!is_bg) {
+      /* wait(NULL); */
       /* wait_fg(job); */
       while (job->state == FOREGROUND)
         sleep(1);
@@ -249,7 +248,7 @@ pid_t run_command(int fd_in, int fd_out, struct ExecUnit *e) {
   if (pid == 0) {
     // this_process.gid <- this_process.pid
     // this is done to set this process's group id to be different from the shell
-    setpgid(0, 0);
+    /* setpgid(0, 0); */
 
     if (e->infile != NULL) {
          /* (open_fd = open(e->infile, O_RDONLY)) >= 0) { */
@@ -454,7 +453,7 @@ void sigint_handler(int sig) {
 
   // send SIGINT signal to fg process
   if (job != NULL)
-    kill(-job->pid, SIGINT);
+    kill(job->pid, SIGINT);
 }
 
 void sigquit_handler(int sig) {
