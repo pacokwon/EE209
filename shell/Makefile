@@ -11,3 +11,8 @@ build/%.o: src/%.c
 
 clean:
 	@rm -rf build
+
+archive:
+	tar -cvzf submission.tar.gz readme Makefile include src
+
+.PHONY: clean archive
