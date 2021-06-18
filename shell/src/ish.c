@@ -115,6 +115,8 @@ void run_rc_file() {
     fflush(stdout);
     fflush(stdout);
   }
+
+  fclose(rc);
 }
 
 void evaluate(char *cmd) {
