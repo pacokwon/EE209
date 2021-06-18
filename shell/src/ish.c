@@ -148,6 +148,10 @@ void evaluate(char *cmd) {
   }
 
   if (result != PARSE_SUCCESS) {
+
+    if (result == PARSE_NO_QUOTE_PAIR)
+      fprintf(stderr, "%s: Could not find quote pair\n", filename);
+
     free_line(tokens);
     return;
   }
