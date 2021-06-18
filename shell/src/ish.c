@@ -237,10 +237,7 @@ void evaluate(char *cmd) {
 
     // busy wait if foreground job
     if (!is_bg) {
-      /* wait(NULL); */
-      /* wait_fg(job); */
-      while (job->state == FOREGROUND)
-        sleep(1);
+      wait_fg(job);
 
       // free job after terminated
       free(job);
