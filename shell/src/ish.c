@@ -15,7 +15,7 @@
 
 enum BuiltinType {
   IS_BUILTIN,
-  NOT_BUILTIN,
+  IS_EXTERNAL,
   IS_EXIT
 };
 
@@ -312,12 +312,12 @@ pid_t run_command(int fd_in, int fd_out, struct ExecUnit *e) {
 enum BuiltinType handle_if_builtin(DynArray_T tokens) {
   // length of more than 0 should be guaranteed
   if (!DynArray_getLength(tokens))
-    return NOT_BUILTIN;
+    return IS_EXTERNAL;
 
   int length = DynArray_getLength(tokens);
   struct Token *first = DynArray_get(tokens, 0);
   if (first->type != TOKEN_WORD)
-    return NOT_BUILTIN;
+    return IS_EXTERNAL;
 
   if (!strcmp(first->value, "setenv")) {
     char *var, *val;
@@ -379,7 +379,7 @@ enum BuiltinType handle_if_builtin(DynArray_T tokens) {
     return IS_BUILTIN;
   }
 
-  return NOT_BUILTIN;
+  return IS_EXTERNAL;
 }
 
 void sigchld_handler(int sig) {
