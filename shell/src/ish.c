@@ -38,6 +38,7 @@ void sigint_handler(int);
 void sigquit_handler(int);
 void sigalrm_handler(int);
 
+// main procedure
 int main(int argc, char **argv) {
   // one space for null, another for checking overflow
   char cmd[MAX_LINE_SIZE + 2];
@@ -65,6 +66,8 @@ int main(int argc, char **argv) {
     }
 
     length = strlen(cmd);
+
+    // command is too long
     if (length > MAX_LINE_SIZE) {
       fprintf(stderr, "%s: command too long\n", shell_name);
       continue;
@@ -74,17 +77,22 @@ int main(int argc, char **argv) {
     if (cmd[length - 1] == '\n')
       cmd[length - 1] = '\0';
 
+    // evaluate the command
     should_continue = evaluate(cmd);
 
     fflush(stdout);
     fflush(stdout);
   }
 
+  // clean global resources
   cleanup();
 
   return 0;
 }
 
+/**
+ * run_rc_file - read and run the commands in the rc file
+ */
 void run_rc_file() {
   char cmd[MAX_LINE_SIZE + 2];
   int length;
@@ -130,7 +138,15 @@ void run_rc_file() {
   }
 }
 
-// returns if shell should continue or not
+/**
+ * evaluate - accept a command string and run it
+ *
+ * accepts:
+ *  cmd: c string that contains the whole command
+ *
+ * returns:
+ *  whether or not the shell should continue running
+ */
 bool evaluate(char *cmd) {
   DynArray_T tokens;
   enum ParseResult result;
@@ -174,6 +190,7 @@ bool evaluate(char *cmd) {
 
   pipes = count_pipes(tokens);
 
+  // check if command is background
   is_bg = is_background(tokens);
   if (is_bg && pipes != 0) {
     fprintf(stderr, "Mixture of pipes and background process!\n");
@@ -181,12 +198,14 @@ bool evaluate(char *cmd) {
   }
 
   for (int i = 0; i <= pipes; i++) {
+    // execute command in between pipe
     struct Job *job;
     struct ExecUnit exec_unit;
     pid_t pid;
 
     token_cursor = construct_exec_unit(tokens, token_cursor, &exec_unit);
 
+    /* ------ error handling start ------ */
     if (token_cursor == -1) {
       free(exec_unit.argv);
       goto done;
@@ -211,7 +230,9 @@ bool evaluate(char *cmd) {
       free(exec_unit.argv);
       goto done;
     }
+    /* ------ error handling end ------ */
 
+    // no need to pipe if last command
     if (i != pipes) {
       pipe(fd);
       fd_out = fd[1];
@@ -219,17 +240,21 @@ bool evaluate(char *cmd) {
       fd_out = STDOUT_FILENO;
     }
 
+    // block SIGCHLD, since we want to add a job first
     sigprocmask(SIG_BLOCK, &mask_child, &mask_prev);
+
+    // fork a new process and call the command in it
     pid = run_command (fd_in, fd_out, &exec_unit);
+
     if (pid < 0) {
-      // TODO: error handling!
+      // run_command error! free resources and return
       sigprocmask(SIG_SETMASK, &mask_prev, NULL);
       free(exec_unit.argv);
       if (i != pipes) close(fd[1]);
       goto done;
     }
 
-    // block signals before adding job
+    // block all signals before adding job
     sigprocmask(SIG_BLOCK, &mask_all, NULL);
     job = add_job(jobs, pid, is_bg ? BACKGROUND : FOREGROUND);
     sigprocmask(SIG_SETMASK, &mask_prev, NULL);
@@ -237,6 +262,7 @@ bool evaluate(char *cmd) {
     // parent does not use argv
     free(exec_unit.argv);
 
+    // close write fd in parent, and set up next read fd
     if (i != pipes) {
       close(fd[1]);
       fd_in = fd[0];
@@ -257,11 +283,28 @@ done:
   return builtin_type != IS_EXIT;
 }
 
+/**
+ * wait_fg - wait for a job to finish running
+ *
+ * accepts:
+ *  job: the job to wait for
+ */
 void wait_fg(struct Job *job) {
   while (job->state == FOREGROUND)
     sleep(1);
 }
 
+/**
+ * run_command - run a command with the specified file descriptors
+ *
+ * accepts:
+ *  fd_in: file descriptor to read input from
+ *  fd_out: file descriptor to write output to
+ *  e: struct that contains parsed command information
+ *
+ * returns:
+ *  pid of the created child process
+ */
 pid_t run_command(int fd_in, int fd_out, struct ExecUnit *e) {
   char **argv = e->argv;
   int open_fd;
@@ -309,6 +352,21 @@ pid_t run_command(int fd_in, int fd_out, struct ExecUnit *e) {
   return pid;
 }
 
+/**
+ * handle_if_builtin - accept a dynarray of tokens and execute it if it is
+ * builtin
+ *
+ * this function "executes" the command if the command is built in, and then
+ * returns if it is a builtin command or not
+ *
+ * accepts:
+ *  tokens: a DynArray_T of tokens that comprise the command
+ *
+ * returns:
+ *  IS_BUILTIN if the command is built in
+ *  IS_EXIT if the builtin command is "exit"
+ *  IS_EXTERNAL if the command is not built in
+ */
 enum BuiltinType handle_if_builtin(DynArray_T tokens) {
   // length of more than 0 should be guaranteed
   if (!DynArray_getLength(tokens))
@@ -382,6 +440,11 @@ enum BuiltinType handle_if_builtin(DynArray_T tokens) {
   return IS_EXTERNAL;
 }
 
+/**
+ * sigchld_handler - handler for SIGCHLD
+ *
+ * reap terminated children
+ */
 void sigchld_handler(int sig) {
   int status;
   pid_t pid;
@@ -399,6 +462,11 @@ void sigchld_handler(int sig) {
     return;
 }
 
+/**
+ * sigint_handler - handler for SIGINT
+ *
+ * send a SIGINT signal to the current foreground job
+ */
 void sigint_handler(int sig) {
   struct Job *job;
   sigset_t mask_all, mask_original;
@@ -413,6 +481,12 @@ void sigint_handler(int sig) {
     kill(job->pid, SIGINT);
 }
 
+/**
+ * sigquit_handler - handler for SIGQUIT
+ *
+ * set the `sigquit_active` flag to true, and start an alarm
+ * if handler is invoked again in that time frame, quit.
+ */
 void sigquit_handler(int sig) {
   if (sigquit_active)
     exit(0);
@@ -422,10 +496,18 @@ void sigquit_handler(int sig) {
   alarm(5);
 }
 
+/**
+ * sigalrm_handler - handler for SIGALRM
+ *
+ * sets the global `sigquit_active` variable to false
+ */
 void sigalrm_handler(int sig) {
   sigquit_active = false;
 }
 
+/**
+ * cleanup - clean up global resources
+ */
 void cleanup() {
   if (jobs) {
     free_jobs(jobs);
