@@ -2,6 +2,7 @@
 #define __ISH_PARSE_H
 
 #include "dynarray.h"
+#include "ish.h"
 #include <stdbool.h>
 
 enum TokenType {
@@ -18,6 +19,13 @@ enum ParseResult {
   PARSE_SUCCESS,
 };
 
+struct ExecUnit {
+  int argc;
+  char **argv;
+  char *outfile;
+  char *infile;
+};
+
 struct Token {
   enum TokenType type;
   char *value;
@@ -28,5 +36,6 @@ void free_line(DynArray_T);
 void print_token(void *, void *);
 int count_pipes(DynArray_T);
 bool is_background(DynArray_T);
+int construct_exec_unit(DynArray_T, int, struct ExecUnit *);
 
 #endif

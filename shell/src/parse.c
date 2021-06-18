@@ -324,3 +324,84 @@ bool is_background(DynArray_T tokens) {
 
   return token && token->type == TOKEN_BACKGROUND;
 }
+
+// construct an array of strings from a tokens dynarray
+// tokenCursor will be updated to point to the next command token
+int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e) {
+  int i = token_cursor, j;
+  int length = DynArray_getLength(tokens);
+  int argc = 0;
+  struct Token *token;
+
+  e->infile = NULL;
+  e->outfile = NULL;
+
+  // iteration #1, to compute `argc`
+  while (i < length && ((struct Token *) DynArray_get(tokens, i))->type == TOKEN_WORD) {
+    argc++;
+    i++;
+  }
+
+  char **argv = calloc(argc + 1, sizeof(char *));
+  // iteration #2, to construct `argv`
+  i = token_cursor;
+  j = 0;
+  while (i < length && (token = DynArray_get(tokens, i))->type == TOKEN_WORD) {
+    argv[j] = token->value;
+    i++;
+    j++;
+  }
+  argv[argc] = NULL;
+  e->argc = argc;
+  e->argv = argv;
+
+  // the ith token is a token that is not a word. so one of:
+  // 1) redir in | 2) redir out | 3) pipe | 4) background
+
+  // if this loop ends,
+  // its either because the token is a pipe,
+  // or its the end of the list
+  while (i < length && (token = DynArray_get(tokens, i))->type != TOKEN_PIPE) {
+    enum TokenType type = token->type;
+
+    if (type == TOKEN_REDIRECT_IN || type == TOKEN_REDIRECT_OUT) {
+      token = DynArray_get(tokens, ++i);
+
+      if (token->type != TOKEN_WORD) {
+        if (type == TOKEN_REDIRECT_IN)
+          fprintf(stderr, "%s: Standard input redirection without file name\n", filename);
+
+        if (type == TOKEN_REDIRECT_OUT)
+          fprintf(stderr, "%s: Standard output redirection without file name\n", filename);
+
+        return -1;
+      }
+
+      // NOTE: from here, `token` is a word
+      if (type == TOKEN_REDIRECT_IN) {
+        if (e->infile != NULL) {
+          fprintf(stderr, "%s: Multiple redirection of standard input\n", filename);
+          return -1;
+        }
+
+        e->infile = token->value;
+      } else {
+        if (e->outfile != NULL) {
+          fprintf(stderr, "%s: Multiple redirection of standard out\n", filename);
+          return -1;
+        }
+
+        e->outfile = token->value;
+      }
+    }
+
+    i++;
+  }
+
+  // ignore anything that comes in between a pipe and the next word
+  while (i < length && ((token = DynArray_get(tokens, i))->type != TOKEN_WORD))
+    i++;
+
+  // i will point to a word or an end of the token list
+  return i;
+}
