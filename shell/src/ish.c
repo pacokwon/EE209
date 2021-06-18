@@ -16,7 +16,11 @@
 struct ExecUnit {
   int argc;
   char **argv;
+
+  bool has_redirect_out;
   char *outfile;
+
+  bool has_redirect_in;
   char *infile;
 };
 
@@ -185,6 +189,18 @@ void evaluate(char *cmd) {
 
     if (i < pipes && exec_unit.outfile != NULL) {
       fprintf(stderr, "%s: Multiple redirection of standard out\n", filename);
+      free(exec_unit.argv);
+      goto done;
+    }
+
+    if (exec_unit.has_redirect_out && exec_unit.outfile == NULL) {
+      fprintf(stderr, "%s: Standard output redirection without file name\n", filename);
+      free(exec_unit.argv);
+      goto done;
+    }
+
+    if (exec_unit.has_redirect_in && exec_unit.infile == NULL) {
+      fprintf(stderr, "%s: Standard output redirection without file name\n", filename);
       free(exec_unit.argv);
       goto done;
     }
@@ -370,7 +386,10 @@ int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e)
   int argc = 0;
   struct Token *token;
 
+  e->has_redirect_in = false;
   e->infile = NULL;
+
+  e->has_redirect_out = false;
   e->outfile = NULL;
 
   // iteration #1, to compute `argc`
@@ -403,6 +422,11 @@ int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e)
 
     if (type == TOKEN_REDIRECT_IN || type == TOKEN_REDIRECT_OUT) {
       token = DynArray_get(tokens, ++i);
+
+      if (type == TOKEN_REDIRECT_IN)
+        e->has_redirect_in = true;
+      else
+        e->has_redirect_out = true;
 
       if (token->type != TOKEN_WORD)
         continue;
