@@ -107,6 +107,8 @@ void run_rc_file() {
       continue;
     }
 
+    printf("%s%s", prompt, cmd);
+
     if (cmd[length - 1] == '\n')
       cmd[length - 1] = '\0';
 
