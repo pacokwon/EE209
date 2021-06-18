@@ -35,6 +35,16 @@ static struct Token *make_token(char *line, struct StateBox *box,
 static void free_token(void *pvItem, void *pvExtra);
 static void count_pipes_helper(void *, void *);
 
+/**
+ * parse_line - parse a given string into the given tokens array
+ *
+ * accepts:
+ *  line: pointer to command string
+ *  tokens: dynamic array to store parsed result
+ *
+ * returns:
+ *  the resulting state of parsing
+ */
 enum ParseResult parse_line(char *line, DynArray_T tokens) {
   struct StateBox box = (struct StateBox){
       .is_inside_quote = false,
@@ -78,11 +88,20 @@ enum ParseResult parse_line(char *line, DynArray_T tokens) {
   return PARSE_SUCCESS;
 }
 
+/**
+ * free_line - free all elements and the token array
+ *
+ * accepts:
+ *  tokens: dynamic array storing tokens
+ */
 void free_line(DynArray_T tokens) {
     DynArray_map(tokens, free_token, NULL);
     DynArray_free(tokens);
 }
 
+/**
+ * parse_start: handle STATE_START part
+ */
 static void parse_start(char *line, DynArray_T tokens, struct StateBox *box) {
   char c = line[box->index];
   switch (c) {
@@ -119,6 +138,9 @@ static void parse_start(char *line, DynArray_T tokens, struct StateBox *box) {
   return;
 }
 
+/**
+ * parse_word: handle STATE_WORD part
+ */
 static void parse_word(char *line, DynArray_T tokens, struct StateBox *box) {
   char c = line[box->index];
   bool shouldEarlyReturn = true;
@@ -179,6 +201,9 @@ static void parse_word(char *line, DynArray_T tokens, struct StateBox *box) {
   return;
 }
 
+/**
+ * parse_pipe: handle STATE_PIPE part
+ */
 static void parse_pipe(char *line, DynArray_T tokens, struct StateBox *box) {
   char c = line[box->index];
   struct Token *token = make_token(line, box, TOKEN_PIPE);
@@ -205,6 +230,9 @@ static void parse_pipe(char *line, DynArray_T tokens, struct StateBox *box) {
   return;
 }
 
+/**
+ * parse_redirect: handle STATE_REDIRECT_IN and STATE_REDIRECT_OUT parts
+ */
 static void parse_redirect(char *line, DynArray_T tokens, struct StateBox *box) {
   assert(box->state == STATE_REDIRECT_IN || box->state == STATE_REDIRECT_OUT);
 
@@ -235,6 +263,9 @@ static void parse_redirect(char *line, DynArray_T tokens, struct StateBox *box) 
   return;
 }
 
+/**
+ * parse_background: handle STATE_BACKGROUND parts
+ */
 static void parse_background(char *line, DynArray_T tokens, struct StateBox *box) {
   struct Token *token = make_token(line, box, TOKEN_BACKGROUND);
   DynArray_add(tokens, token);
@@ -244,6 +275,18 @@ static void parse_background(char *line, DynArray_T tokens, struct StateBox *box
   return;
 }
 
+/**
+ * make_token: make a new token with the given information
+ *
+ * accepts:
+ *  line: pointer to command string
+ *  box: current state box
+ *  type: the token type of this token
+ *
+ * returns:
+ *  the newly created token
+ *  NULL on error
+ */
 static struct Token *make_token(char *line, struct StateBox *box,
                                enum TokenType type) {
   int start = box->word_start_index;
@@ -271,6 +314,7 @@ static struct Token *make_token(char *line, struct StateBox *box,
 
   i = 0;
   while (i < size) {
+    // ignore any double quotes in a token
     if (*tokenCursor == '"') {
       tokenCursor++;
       continue;
@@ -285,14 +329,23 @@ static struct Token *make_token(char *line, struct StateBox *box,
   return token;
 }
 
+/**
+ * free_token: free any allocated memory of a token
+ */
 static void free_token(void *pvItem, void *pvExtra) {
    struct Token *token = (struct Token *) pvItem;
+
+   // only a token of type TOKEN_WORD has dynamically allocated value
    if (token->type == TOKEN_WORD)
      free(token->value);
 
    free(token);
 }
 
+/**
+ * print_token: helper function to pretty print a token
+ * intended for debugging purposes. use with `DynArray_map`
+ */
 void print_token(void *pvItem, void *pvExtra) {
   struct Token *token = (struct Token *) pvItem;
 
@@ -304,12 +357,26 @@ void print_token(void *pvItem, void *pvExtra) {
   else printf("Invalid Token\n");
 }
 
+/**
+ * count_pipes: count the number of pipes in an array of tokens
+ *
+ * accepts:
+ *  tokens: a dynamic array of tokens
+ *
+ * returns:
+ *  the number of pipes that the array contains
+ */
 int count_pipes(DynArray_T tokens) {
   int pipes = 0;
   DynArray_map(tokens, count_pipes_helper, &pipes);
   return pipes;
 }
 
+/**
+ * count_pipes_helper: helper function for count_pipes
+ *
+ * used in conjunction with DynArray_map.
+ */
 static void count_pipes_helper(void *element, void *extra) {
   struct Token *token = element;
   int *sum = extra;
@@ -318,6 +385,15 @@ static void count_pipes_helper(void *element, void *extra) {
     (*sum)++;
 }
 
+/**
+ * is_background: checks if command is a background task
+ *
+ * accepts:
+ *  tokens: a dynamic array of tokens
+ *
+ * returns:
+ *  whether this command is a background task or not
+ */
 bool is_background(DynArray_T tokens) {
   int length = DynArray_getLength(tokens);
   struct Token *token = DynArray_get(tokens, length - 1);
@@ -327,6 +403,19 @@ bool is_background(DynArray_T tokens) {
 
 // construct an array of strings from a tokens dynarray
 // tokenCursor will be updated to point to the next command token
+
+/**
+ * construct_exec_unit: construct an array of strings from a tokens dynarray
+ *
+ * accepts:
+ *  tokens: a dynamic array of tokens
+ *  token_cursor: where to start constructing the execution unit from
+ *  e: pointer to struct ExecUnit that is to be populated with the parsed result
+ *
+ * returns:
+ *  a new value of token_cursor. pass this value to the next iteration of construct_exec_unit
+ *  -1 on error
+ */
 int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e) {
   int i = token_cursor, j;
   int length = DynArray_getLength(tokens);

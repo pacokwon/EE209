@@ -19,10 +19,15 @@ enum BuiltinType {
   IS_EXIT
 };
 
+// array of jobs
 DynArray_T jobs;
+// shell prompt
 char * const prompt = "% ";
+// name of the rcfile
 char * const rcfilename = ".ishrc";
+// file name of the current process
 char *shell_name;
+// is the shell waiting for another SIGQUIT signal?
 bool sigquit_active;
 
 bool evaluate(char *);
