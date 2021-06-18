@@ -16,11 +16,7 @@
 struct ExecUnit {
   int argc;
   char **argv;
-
-  bool has_redirect_out;
   char *outfile;
-
-  bool has_redirect_in;
   char *infile;
 };
 
@@ -173,6 +169,11 @@ void evaluate(char *cmd) {
 
     token_cursor = construct_exec_unit(tokens, token_cursor, &exec_unit);
 
+    if (token_cursor == -1) {
+      free(exec_unit.argv);
+      goto done;
+    }
+
     if (i > 0) {
       if (exec_unit.argc == 0) {
         fprintf(stderr, "%s: Pipe or redirection destination is not specified\n", filename);
@@ -189,18 +190,6 @@ void evaluate(char *cmd) {
 
     if (i < pipes && exec_unit.outfile != NULL) {
       fprintf(stderr, "%s: Multiple redirection of standard out\n", filename);
-      free(exec_unit.argv);
-      goto done;
-    }
-
-    if (exec_unit.has_redirect_out && exec_unit.outfile == NULL) {
-      fprintf(stderr, "%s: Standard output redirection without file name\n", filename);
-      free(exec_unit.argv);
-      goto done;
-    }
-
-    if (exec_unit.has_redirect_in && exec_unit.infile == NULL) {
-      fprintf(stderr, "%s: Standard output redirection without file name\n", filename);
       free(exec_unit.argv);
       goto done;
     }
@@ -383,10 +372,7 @@ int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e)
   int argc = 0;
   struct Token *token;
 
-  e->has_redirect_in = false;
   e->infile = NULL;
-
-  e->has_redirect_out = false;
   e->outfile = NULL;
 
   // iteration #1, to compute `argc`
@@ -420,19 +406,32 @@ int construct_exec_unit(DynArray_T tokens, int token_cursor, struct ExecUnit *e)
     if (type == TOKEN_REDIRECT_IN || type == TOKEN_REDIRECT_OUT) {
       token = DynArray_get(tokens, ++i);
 
-      if (type == TOKEN_REDIRECT_IN)
-        e->has_redirect_in = true;
-      else
-        e->has_redirect_out = true;
+      if (token->type != TOKEN_WORD) {
+        if (type == TOKEN_REDIRECT_IN)
+          fprintf(stderr, "%s: Standard input redirection without file name\n", filename);
 
-      if (token->type != TOKEN_WORD)
-        continue;
+        if (type == TOKEN_REDIRECT_OUT)
+          fprintf(stderr, "%s: Standard output redirection without file name\n", filename);
+
+        return -1;
+      }
 
       // NOTE: from here, `token` is a word
-      if (type == TOKEN_REDIRECT_IN)
+      if (type == TOKEN_REDIRECT_IN) {
+        if (e->infile != NULL) {
+          fprintf(stderr, "%s: Multiple redirection of standard input\n", filename);
+          return -1;
+        }
+
         e->infile = token->value;
-      else
+      } else {
+        if (e->outfile != NULL) {
+          fprintf(stderr, "%s: Multiple redirection of standard out\n", filename);
+          return -1;
+        }
+
         e->outfile = token->value;
+      }
     }
 
     i++;
