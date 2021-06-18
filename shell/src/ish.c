@@ -112,6 +112,7 @@ void run_rc_file() {
     if (cmd[length - 1] == '\n')
       cmd[length - 1] = '\0';
 
+    fflush(rc);
     evaluate(cmd);
 
     fflush(stdout);
