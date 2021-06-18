@@ -6,7 +6,7 @@ ENV HOME=/home/$USER
 
 RUN apt update && \
     apt upgrade -y && \
-    apt install -y sudo gdb vim wget make gcc gdb
+    apt install -y sudo gdb vim wget make gcc gdb valgrind
 
 RUN useradd --create-home --shell /bin/bash $USER && \
     usermod -aG sudo $USER && \
