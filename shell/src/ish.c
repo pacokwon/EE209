@@ -20,16 +20,23 @@ struct ExecUnit {
   char *infile;
 };
 
+enum BuiltinType {
+  IS_BUILTIN,
+  NOT_BUILTIN,
+  IS_EXIT
+};
+
 DynArray_T jobs;
 char * const prompt = "% ";
-char * const rcfile = ".ishrc";
+char * const rcfilename = ".ishrc";
 char *filename;
 bool sigquit_active;
 
+void cleanup();
 void wait_fg(struct Job *);
 void run_rc_file();
-void evaluate(char *);
-bool handle_if_builtin(DynArray_T);
+bool evaluate(char *);
+enum BuiltinType handle_if_builtin(DynArray_T);
 pid_t run_command(int, int, struct ExecUnit *);
 int construct_exec_unit(DynArray_T, int, struct ExecUnit *);
 
@@ -42,6 +49,7 @@ int main(int argc, char **argv) {
   // one space for null, another for checking overflow
   char cmd[MAX_LINE_SIZE + 2];
   int length;
+  bool should_continue = true;
 
   sigquit_active = false;
   filename = argv[0];
@@ -54,13 +62,13 @@ int main(int argc, char **argv) {
 
   run_rc_file();
 
-  while (true) {
+  while (should_continue) {
     printf("%s", prompt);
 
     if (fgets(cmd, MAX_LINE_SIZE, stdin) == NULL) {
       // EOF, if code has reached here
       printf("\n"); // print newline before exiting
-      return 0;
+      break;
     }
 
     length = strlen(cmd);
@@ -73,33 +81,34 @@ int main(int argc, char **argv) {
     if (cmd[length - 1] == '\n')
       cmd[length - 1] = '\0';
 
-    evaluate(cmd);
+    should_continue = evaluate(cmd);
 
     fflush(stdout);
     fflush(stdout);
   }
 
-  free_jobs(jobs);
+  cleanup();
 
   return 0;
 }
 
 void run_rc_file() {
-  FILE *rc;
   char cmd[MAX_LINE_SIZE + 2];
   int length;
+  FILE *rcfile = NULL;
+  bool should_continue = true;
   char *homedir = getenv("HOME");
-  char *path_to_rc = malloc(strlen(homedir) + strlen(rcfile) + 2);
+  char *path_to_rc = malloc(strlen(homedir) + strlen(rcfilename) + 2);
 
-  sprintf(path_to_rc, "%s/%s", homedir, rcfile);
+  sprintf(path_to_rc, "%s/%s", homedir, rcfilename);
 
-  rc = fopen(path_to_rc, "r");
+  rcfile = fopen(path_to_rc, "r");
   free(path_to_rc);
 
-  if (rc == NULL)
+  if (rcfile == NULL)
     return;
 
-  while (fgets(cmd, MAX_LINE_SIZE, rc)) {
+  while (should_continue && fgets(cmd, MAX_LINE_SIZE, rcfile)) {
     length = strlen(cmd);
 
     if (length > MAX_LINE_SIZE) {
@@ -112,20 +121,28 @@ void run_rc_file() {
     if (cmd[length - 1] == '\n')
       cmd[length - 1] = '\0';
 
-    fflush(rc);
-    evaluate(cmd);
+    fflush(rcfile);
+    should_continue = evaluate(cmd);
 
     fflush(stdout);
     fflush(stdout);
   }
 
-  fclose(rc);
+  fclose(rcfile);
+  rcfile = NULL;
+
+  if (!should_continue) {
+    cleanup();
+    exit(0);
+  }
 }
 
-void evaluate(char *cmd) {
+// returns if shell should continue or not
+bool evaluate(char *cmd) {
   DynArray_T tokens;
   enum ParseResult result;
-  bool is_builtin, is_bg;
+  enum BuiltinType builtin_type = IS_BUILTIN;
+  bool is_bg;
   int pipes, fd_in = STDIN_FILENO, fd_out = STDOUT_FILENO, token_cursor = 0;
   int fd[2];
   sigset_t mask_all, mask_child, mask_prev;
@@ -137,7 +154,7 @@ void evaluate(char *cmd) {
   tokens = DynArray_new(0);
   if (tokens == NULL) {
     fprintf(stderr, "Cannot allocate memory\n");
-    exit(EXIT_FAILURE);
+    return false;
   }
 
   result = parse_line(cmd, tokens);
@@ -147,20 +164,19 @@ void evaluate(char *cmd) {
   if (!DynArray_getLength(tokens) ||
       ((struct Token *) DynArray_get(tokens, 0))->type != TOKEN_WORD) {
     free_line(tokens);
-    return;
+    return true;
   }
 
   if (result != PARSE_SUCCESS) {
-
     if (result == PARSE_NO_QUOTE_PAIR)
       fprintf(stderr, "%s: Could not find quote pair\n", filename);
 
     free_line(tokens);
-    return;
+    return true;
   }
 
-  is_builtin = handle_if_builtin(tokens);
-  if (is_builtin)
+  builtin_type = handle_if_builtin(tokens);
+  if (builtin_type == IS_BUILTIN || builtin_type == IS_EXIT)
     goto done;
 
   pipes = count_pipes(tokens);
@@ -244,6 +260,8 @@ void evaluate(char *cmd) {
 
 done:
   free_line(tokens);
+
+  return builtin_type != IS_EXIT;
 }
 
 void wait_fg(struct Job *job) {
@@ -299,42 +317,41 @@ pid_t run_command(int fd_in, int fd_out, struct ExecUnit *e) {
   return pid;
 }
 
-bool handle_if_builtin(DynArray_T tokens) {
+enum BuiltinType handle_if_builtin(DynArray_T tokens) {
   // length of more than 0 should be guaranteed
   if (!DynArray_getLength(tokens))
-    return false;
+    return NOT_BUILTIN;
 
-  bool is_built_in = false;
   int length = DynArray_getLength(tokens);
   struct Token *first = DynArray_get(tokens, 0);
   if (first->type != TOKEN_WORD)
-    return false;
+    return NOT_BUILTIN;
 
   if (!strcmp(first->value, "setenv")) {
     char *var, *val;
 
     if (length < 2) {
       fprintf(stderr, "%s: setenv takes one or two parameters\n", filename);
-      return true;
+      return IS_BUILTIN;
     }
 
     var = ((struct Token *)DynArray_get(tokens, 1))->value;
     val = length == 2 ? "" : ((struct Token *)DynArray_get(tokens, 2))->value;
     setenv(var, val, 1);
 
-    return true;
+    return IS_BUILTIN;
   } else if (!strcmp(first->value, "unsetenv")) {
     char *var;
 
     if (length < 2) {
       fprintf(stderr, "%s: unsetenv takes one parameter\n", filename);
-      return true;
+      return IS_BUILTIN;
     }
 
     var = ((struct Token *)DynArray_get(tokens, 1))->value;
     unsetenv(var);
 
-    return true;
+    return IS_BUILTIN;
   } else if (!strcmp(first->value, "cd")) {
     char *dir = length == 2 ? ((struct Token *)DynArray_get(tokens, 1))->value
                             : getenv("HOME");
@@ -342,9 +359,9 @@ bool handle_if_builtin(DynArray_T tokens) {
     if (chdir(dir) < 0)
       fprintf(stderr, "%s: No such file or directory\n", filename);
 
-    return true;
+    return IS_BUILTIN;
   } else if (!strcmp(first->value, "exit")) {
-    exit(0);
+    return IS_EXIT;
   } else if (!strcmp(first->value, "fg")) {
     struct Job *job;
     sigset_t sset, prev;
@@ -357,7 +374,7 @@ bool handle_if_builtin(DynArray_T tokens) {
     if (job == NULL) {
       fprintf(stderr, "fg: no child processes\n");
       sigprocmask(SIG_SETMASK, &prev, NULL);
-      return true;
+      return IS_BUILTIN;
     }
 
     job->state = FOREGROUND;
@@ -367,10 +384,10 @@ bool handle_if_builtin(DynArray_T tokens) {
     wait_fg(job);
     printf("[%d]                           Done\n", job->pid);
 
-    return true;
+    return IS_BUILTIN;
   }
 
-  return is_built_in;
+  return NOT_BUILTIN;
 }
 
 // construct an array of strings from a tokens dynarray
@@ -496,4 +513,11 @@ void sigquit_handler(int sig) {
 
 void sigalrm_handler(int sig) {
   sigquit_active = false;
+}
+
+void cleanup() {
+  if (jobs) {
+    free_jobs(jobs);
+    jobs = NULL;
+  }
 }
