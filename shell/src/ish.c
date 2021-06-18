@@ -311,7 +311,7 @@ bool handle_if_builtin(DynArray_T tokens) {
     char *var, *val;
 
     if (length < 2) {
-      fprintf(stderr, "usage: setenv <variable> [<value>]\n");
+      fprintf(stderr, "%s: setenv takes one or two parameters\n", filename);
       return true;
     }
 
@@ -324,7 +324,7 @@ bool handle_if_builtin(DynArray_T tokens) {
     char *var;
 
     if (length < 2) {
-      fprintf(stderr, "usage: unsetenv <variable>\n");
+      fprintf(stderr, "%s: unsetenv takes one parameter\n", filename);
       return true;
     }
 
