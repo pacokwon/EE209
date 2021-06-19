@@ -332,7 +332,7 @@ pid_t run_command(int fd_in, int fd_out, struct ExecUnit *e) {
     }
 
     if (e->outfile != NULL
-        && (open_fd = open(e->outfile, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR)) >= 0) {
+        && (open_fd = open(e->outfile, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR)) >= 0) {
       // close the pipe and use the file instead
       close(fd_out);
       fd_out = open_fd;
