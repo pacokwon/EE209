@@ -198,7 +198,7 @@ bool evaluate(char *cmd) {
   // check if command is background
   is_bg = is_background(tokens);
   if (is_bg && pipes != 0) {
-    fprintf(stderr, "Mixture of pipes and background process!\n");
+    fprintf(stderr, "Wrong Syntax using &\n");
     goto done;
   }
 
